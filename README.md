@@ -138,6 +138,4 @@ This project is licensed under the **GNU AGPLv3** — see [LICENSE](LICENSE) for
 ---
 
 **Built with open ❤️**
-
-Made for creators who want true ownership and instant global payments.
 ```
