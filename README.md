@@ -8,7 +8,7 @@ A beautiful, powerful and fully decentralized Linktree + OnlyFans + Gumroad buil
 
 ## ✨ Features
 
-- **Creator Cards** — Personal pages (`vynx.xyz/@username`) with full customization
+- **Creator Cards** — Personal pages (`vynx.me/@username`) with full customization
 - **Subscriptions** — Recurring payments powered by Streamflow
 - **Book Video Calls** — Paid appointments with instant Blink checkout
 - **Digital Store** — Sell photos, videos, packs, presets, courses, etc.
@@ -132,13 +132,12 @@ This project is licensed under the **GNU AGPLv3** — see [LICENSE](LICENSE) for
 
 ## Links
 
-- Website: [vynx.xyz](https://vynx.xyz) (coming soon)
-- X / Twitter: [@vynx_sol](https://twitter.com/vynx_sol)
-- Discord: (link soon)
+- Website: [vynx.me](https://vynx.me)
+- X / Twitter: [@vynx_sol](https://x.com/vynxme)
 
 ---
 
-**Built with ❤️ on Solana**
+**Built with open ❤️**
 
 Made for creators who want true ownership and instant global payments.
 ```
