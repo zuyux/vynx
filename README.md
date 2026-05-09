@@ -1,3 +1,4 @@
+# <img src="https://raw.githubusercontent.com/zuyux/vynx/refs/heads/main/front/public/logo.png" alt="VYNX Logo" width="240" style="margin-bottom: 1rem;" />
 # VYNX
 
 **The ultimate Solana-native Creator Card platform.**
