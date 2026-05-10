@@ -1,93 +1,31 @@
 "use client";
-import { useState } from "react";
 import Image from "next/image";
+import { Sidebar } from "@/components/Sidebar";
 
 const mockUser = {
   username: "anthoZG",
-  earnings: 12.45,
-  earningsChange: 2.31,
-  earningsChangePct: 23.1,
-  subscribers: 128,
-  subscribersChange: 18,
-  subscribersChangePct: 16.4,
-  bookings: 24,
-  bookingsChange: 6,
-  bookingsChangePct: 33.3,
-  tips: 2.73,
-  tipsChange: 0.68,
-  tipsChangePct: 33.0,
+  earnings: 0,
+  earningsChange: 0,
+  earningsChangePct: 0,
+  subscribers: 0,
+  subscribersChange: 0,
+  subscribersChangePct: 0,
+  bookings: 0,
+  bookingsChange: 0,
+  bookingsChangePct: 0,
+  tips: 0,
+  tipsChange: 0,
+  tipsChangePct: 0,
 };
 
-const recentActivity = [
-  { user: "@solana_king", action: "Subscribed to VIP", amount: "+0.25 SOL", time: "2m ago", badgeColor: "bg-[#7c3aed]", badgeIcon: "👤" },
-  { user: "@crypto_lover", action: "Purchased 5 Photo Pack", amount: "+0.15 SOL", time: "15m ago", badgeColor: "bg-[#0e7490]", badgeIcon: "🛍️" },
-  { user: "@web3_baddie", action: "Tipped you", amount: "+0.10 SOL", time: "32m ago", badgeColor: "bg-[#be123c]", badgeIcon: "💖" },
-  { user: "@degen_dreamer", action: "Booked a Video Call", amount: "+0.45 SOL", time: "1h ago", badgeColor: "bg-[#1d4ed8]", badgeIcon: "📅" },
-];
-
-const NAV = [
-  { id: "dashboard", label: "Dashboard", icon: "🏠" },
-  { id: "mypage", label: "My Page", icon: "👤" },
-  { id: "products", label: "Products", icon: "🛍️" },
-  { id: "subscriptions", label: "Subscriptions", icon: "🔄" },
-  { id: "bookings", label: "Bookings", icon: "📅" },
-  { id: "tips", label: "Tips", icon: "💖" },
-  { id: "analytics", label: "Analytics", icon: "📊" },
-  { id: "settings", label: "Settings", icon: "⚙️" },
-];
+const recentActivity: { user: string; action: string; amount: string; time: string; badgeColor: string; badgeIcon: string }[] = [];
 
 export default function DashboardPage() {
-  const [tab, setTab] = useState("dashboard");
-
   return (
-    <div className="min-h-screen flex bg-[#0d0d1a] text-white font-sans">
-      {/* Sidebar */}
-      <aside className="w-56 bg-[#111122] flex flex-col py-8 px-5 min-h-screen fixed top-0 left-0 bottom-0 z-20">
-        {/* Logo */}
-        <div className="flex items-center gap-2 mb-10">
-          <span className="text-2xl font-extrabold tracking-tight text-white">VYNX</span>
-          <span className="text-[#A259FF] text-xl leading-none">✦</span>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex flex-col gap-1 flex-1">
-          {NAV.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setTab(item.id)}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                tab === item.id
-                  ? "bg-[#1e1e40] text-[#A259FF]"
-                  : "text-zinc-400 hover:bg-[#1a1a30] hover:text-white"
-              }`}
-            >
-              <span className="text-base leading-none">{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
-        </nav>
-
-        {/* Blink promo */}
-        <div className="mt-6 bg-[#1a1a30] rounded-xl p-4 flex flex-col gap-3">
-          <div className="w-9 h-9 rounded-lg bg-[#2d2d60] flex items-center justify-center text-xl">⚡</div>
-          <p className="text-xs text-zinc-300 leading-relaxed">
-            <span className="font-bold text-white">Every link is a Blink.</span><br />
-            Share your products, subscriptions and bookings anywhere on Solana.
-          </p>
-          <button className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-semibold rounded-lg px-4 py-2 transition">
-            Create Blink <span className="text-xs">↗</span>
-          </button>
-        </div>
-
-        {/* Wallet address */}
-        <div className="mt-4 flex items-center justify-between bg-[#1a1a30] rounded-lg px-3 py-2">
-          <span className="text-xs text-zinc-400 select-all font-mono">9h7...k3Lz</span>
-          <span className="text-zinc-500 text-xs">▾</span>
-        </div>
-      </aside>
-
+    <div className="min-h-screen flex bg-black text-white font-sans">
+      <Sidebar />
       {/* Main Content */}
-      <main className="flex-1 ml-56 p-8 min-h-screen">
+      <main className="flex-1 ml-64 p-8 min-h-screen bg-black">
         {/* Top header */}
         <div className="flex items-start justify-between mb-8">
           <div>
@@ -95,10 +33,10 @@ export default function DashboardPage() {
               Welcome back, <span className="text-white">{mockUser.username}</span>{" "}
               <span className="text-purple-400">💜</span>
             </h1>
-            <p className="text-zinc-500 text-sm mt-1">Here's how your creator empire is performing.</p>
+            <p className="text-zinc-500 text-sm mt-1">Here&apos;s how your creator empire is performing.</p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 bg-[#1a1a30] text-white text-sm font-semibold rounded-lg px-4 py-2.5 hover:bg-[#23234a] transition border border-[#2d2d50]">
+            <button className="flex items-center gap-2 bg-zinc-900 text-white text-sm font-semibold rounded-lg px-4 py-2.5 hover:bg-zinc-800 transition border border-zinc-800">
               View My Page <span className="text-xs opacity-70">↗</span>
             </button>
             <div className="flex items-center gap-2">
@@ -113,14 +51,14 @@ export default function DashboardPage() {
         {/* Stats Cards */}
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
           {[
-            { label: "Total Earnings", value: `${mockUser.earnings} SOL`, change: `+${mockUser.earningsChange} SOL (${mockUser.earningsChangePct}%)`, icon: "💲", iconBg: "bg-[#2d1f5e]" },
-            { label: "Subscribers", value: mockUser.subscribers, change: `+${mockUser.subscribersChange} (${mockUser.subscribersChangePct}%)`, icon: "👥", iconBg: "bg-[#0f3d3e]" },
-            { label: "Bookings", value: mockUser.bookings, change: `+${mockUser.bookingsChange} (${mockUser.bookingsChangePct}%)`, icon: "📅", iconBg: "bg-[#1a2a50]" },
-            { label: "Tips Received", value: `${mockUser.tips} SOL`, change: `+${mockUser.tipsChange} SOL (${mockUser.tipsChangePct}%)`, icon: "💖", iconBg: "bg-[#3d1229]" },
+            { label: "Total Earnings", value: `${mockUser.earnings} SOL`, change: `+${mockUser.earningsChange} SOL (${mockUser.earningsChangePct}%)`, icon: "/wallet-money.svg", iconBg: "bg-[#2d1f5e]" },
+            { label: "Subscribers", value: mockUser.subscribers, change: `+${mockUser.subscribersChange} (${mockUser.subscribersChangePct}%)`, icon: "/people.svg", iconBg: "bg-[#0f3d3e]" },
+            { label: "Bookings", value: mockUser.bookings, change: `+${mockUser.bookingsChange} (${mockUser.bookingsChangePct}%)`, icon: "/calendar.svg", iconBg: "bg-[#1a2a50]" },
+            { label: "Tips Received", value: `${mockUser.tips} SOL`, change: `+${mockUser.tipsChange} SOL (${mockUser.tipsChangePct}%)`, icon: "/heart-add.svg", iconBg: "bg-[#3d1229]" },
           ].map((stat) => (
-            <div key={stat.label} className="bg-[#141428] rounded-xl p-5 flex items-center gap-4 border border-[#1e1e40]">
-              <div className={`w-12 h-12 rounded-full ${stat.iconBg} flex items-center justify-center text-xl flex-shrink-0`}>
-                {stat.icon}
+            <div key={stat.label} className="bg-zinc-950 rounded-xl p-5 flex items-center gap-4 border border-zinc-900">
+              <div className={`w-12 h-12 rounded-full ${stat.iconBg} flex items-center justify-center shrink-0`}>
+                <Image src={stat.icon} alt={stat.label} width={24} height={24} />
               </div>
               <div>
                 <p className="text-zinc-500 text-xs mb-1">{stat.label}</p>
@@ -135,10 +73,10 @@ export default function DashboardPage() {
         {/* Earnings Chart & Recent Activity */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 mb-5">
           {/* Earnings Chart */}
-          <div className="xl:col-span-2 bg-[#141428] rounded-xl p-6 border border-[#1e1e40]">
+          <div className="xl:col-span-2 bg-zinc-950 rounded-xl p-6 border border-zinc-900">
             <div className="flex items-center justify-between mb-1">
               <span className="font-bold text-base">Earnings</span>
-              <button className="flex items-center gap-1 bg-[#1e1e40] text-zinc-300 text-xs rounded-lg px-3 py-1.5 border border-[#2d2d50]">
+              <button className="flex items-center gap-1 bg-zinc-900 text-zinc-300 text-xs rounded-lg px-3 py-1.5 border border-zinc-800">
                 Last 7 days <span>▾</span>
               </button>
             </div>
@@ -185,7 +123,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Recent Activity */}
-          <div className="bg-[#141428] rounded-xl p-5 border border-[#1e1e40]">
+          <div className="bg-zinc-950 rounded-xl p-5 border border-zinc-900">
             <div className="flex items-center justify-between mb-4">
               <span className="font-bold text-base">Recent Activity</span>
               <button className="text-[#A259FF] text-xs font-semibold hover:underline">View All</button>
@@ -193,11 +131,11 @@ export default function DashboardPage() {
             <ul className="flex flex-col gap-4">
               {recentActivity.map((a, i) => (
                 <li key={i} className="flex items-center gap-3">
-                  <div className="relative flex-shrink-0">
+                  <div className="relative shrink-0">
                     <div className="w-9 h-9 rounded-full bg-zinc-700 overflow-hidden">
                       <Image src="/mocks/vynx-card.png" alt={a.user} width={36} height={36} />
                     </div>
-                    <span className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full ${a.badgeColor} flex items-center justify-center text-[9px] border border-[#141428]`}>
+                    <span className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full ${a.badgeColor} flex items-center justify-center text-[9px] border border-black`}>
                       {a.badgeIcon}
                     </span>
                   </div>
@@ -205,7 +143,7 @@ export default function DashboardPage() {
                     <p className="text-sm font-semibold text-white truncate">{a.user}</p>
                     <p className="text-xs text-zinc-500 truncate">{a.action}</p>
                   </div>
-                  <div className="text-right flex-shrink-0">
+                  <div className="text-right shrink-0">
                     <p className="text-green-400 text-xs font-bold">{a.amount}</p>
                     <p className="text-zinc-600 text-xs">{a.time}</p>
                   </div>
@@ -216,21 +154,21 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-[#141428] rounded-xl p-6 border border-[#1e1e40]">
+        <div className="bg-zinc-950 rounded-xl p-6 border border-zinc-900">
           <h2 className="font-bold text-base mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
             {[
-              { icon: "🛍️", label: "Create Product", sub: "Sell digital content", iconBg: "bg-[#0f3d3e]" },
-              { icon: "👥", label: "New Subscription", sub: "Create a subscription", iconBg: "bg-[#0f3d3e]" },
-              { icon: "📅", label: "Book a Call", sub: "Add available slots", iconBg: "bg-[#1a2a50]" },
-              { icon: "💸", label: "Send Tip Link", sub: "Share your tip link", iconBg: "bg-[#3d1229]" },
+              { icon: "/gift.svg", label: "Create Product", sub: "Sell digital content", iconBg: "bg-[#0f3d3e]" },
+              { icon: "/heart-add.svg", label: "New Subscription", sub: "Create a subscription", iconBg: "bg-[#0f3d3e]" },
+              { icon: "/calendar.svg", label: "Book a Call", sub: "Add available slots", iconBg: "bg-[#1a2a50]" },
+              { icon: "/send-2.svg", label: "Send Tip Link", sub: "Share your tip link", iconBg: "bg-[#3d1229]" },
             ].map((action) => (
               <button
                 key={action.label}
-                className="flex flex-col items-center gap-3 bg-[#1a1a30] hover:bg-[#23234a] rounded-xl p-5 transition border border-[#2d2d50]"
+                className="flex flex-col items-center gap-3 bg-zinc-900 hover:bg-zinc-800 rounded-xl p-5 transition border border-zinc-800"
               >
-                <div className={`w-12 h-12 rounded-full ${action.iconBg} flex items-center justify-center text-2xl`}>
-                  {action.icon}
+                <div className={`w-12 h-12 rounded-full ${action.iconBg} flex items-center justify-center`}>
+                  <Image src={action.icon} alt={action.label} width={24} height={24} />
                 </div>
                 <div className="text-center">
                   <p className="font-semibold text-sm">{action.label}</p>
@@ -239,19 +177,6 @@ export default function DashboardPage() {
               </button>
             ))}
           </div>
-        </div>
-      </main>
-    </div>
-  );
-}
-            <span className="font-bold">Book a Call</span>
-            <span className="text-zinc-400 text-sm">Add available slots</span>
-          </button>
-          <button className="bg-[#23234a] rounded-xl p-6 flex flex-col items-center hover:bg-[#18181b] transition">
-            <span className="text-3xl mb-2">💸</span>
-            <span className="font-bold">Send Tip Link</span>
-            <span className="text-zinc-400 text-sm">Share your tip link</span>
-          </button>
         </div>
       </main>
     </div>

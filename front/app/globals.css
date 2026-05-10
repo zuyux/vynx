@@ -1,6 +1,6 @@
 /* Heading font utility class */
 .heading-font {
-  font-family: 'Stack Sans Notch', system-ui, sans-serif;
+  font-family: 'Nofex', system-ui, sans-serif;
   font-weight: 700;
 }
 
@@ -9,8 +9,8 @@
 @import "shadcn/tailwind.css";
 
 @font-face {
-  font-family: 'Stack Sans Notch';
-  src: url('/fonts/StackSansNotch-Bold.ttf') format('truetype');
+  font-family: 'Nofex';
+  src: url('/fonts/NOFEX.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;

@@ -22,7 +22,7 @@ export default function Home() {
       followers: "43.2K",
       views: "1.2M+",
       earned: "$57,340",
-      img: "/mocks/vynx-card.png",
+      img: "/asset-lunasol.png",
     },
     {
       username: "CryptoCoach",
@@ -30,7 +30,7 @@ export default function Home() {
       followers: "21k",
       views: "800K+",
       earned: "$8,920",
-      img: "/mocks/vynx-card.png",
+      img: "/asset-cryptocoach.png",
     },
     {
       username: "ArtByMaria",
@@ -38,15 +38,15 @@ export default function Home() {
       followers: "15k",
       views: "500K+",
       earned: "$5,210",
-      img: "/mocks/vynx-card.png",
+      img: "/asset-artbymaria.png",
     },
     {
-      username: "FitnessSol",
+      username: "FitnessRox",
       title: "Trainer",
       followers: "12k",
       views: "300K+",
       earned: "$6,340",
-      img: "/mocks/vynx-card.png",
+      img: "/asset-fitnessrox.png",
     },
   ], []);
 
@@ -61,7 +61,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-linear-to-br from-[#3b0149] to-[#000] text-white font-sans">
       {/* Navbar */}
-      <nav className="flex items-center justify-between px-8 py-6 w-full max-w-7xl mx-auto">
+      <nav className="absolute flex items-center justify-between px-8 py-6 w-full mx-auto z-30">
         <div className="flex items-center gap-3">
           <Image src="/logo.png" alt="VYNX Logo" width={40} height={40} />
         </div>
@@ -71,10 +71,10 @@ export default function Home() {
           <a href="#features" className="hover:text-[#6B4EFF] transition">Pricing</a>
           <a href="#examples" className="hover:text-[#6B4EFF] transition">Reviews</a>
         </div>
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-2 items-center">
           {!isConnected ? (
-            <Button className="bg-white text-black rounded-md px-6 py-2 font-semibold shadow-lg cursor-pointer" onClick={open}>
-              Connect Wallet
+            <Button className="bg-transparent text-white border border-white/20 rounded-md px-6 py-5 font-semibold shadow-lg cursor-pointer text-sm" onClick={open}>
+              CONNECT
             </Button>
           ) : (
             <div className="flex gap-2 items-center">
@@ -83,25 +83,33 @@ export default function Home() {
               <Button variant="outline" onClick={() => solana.signMessage("Hello!")} className="text-xs md:text-base">Sign Message</Button>
             </div>
           )}
-          <Button className="cursor-pointer hidden md:inline-block bg-[#00F5A0] text-black rounded-md px-6 py-0 font-semibold hover:bg-[#6B4EFF] hover:text-white transition">Get Card</Button>
+          <Button className="cursor-pointer bg-[#00F5A0] text-[#000000] rounded-md px-6 py-5 font-semibold hover:bg-[#6B4EFF] transition text-sm">GET CARD</Button>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="flex flex-col md:flex-row items-center justify-between gap-12 py-2 px-4 max-w-7xl mx-auto w-full">
+      <section className="relative flex flex-col md:flex-row items-center justify-between gap-12 py-30 px-8 w-full h-auto">
+        {/* Background image */}
+        <Image
+          src="/hero-bg.png"
+          alt=""
+          fill
+          priority
+          className="object-cover object-center z-0 opacity-20"
+        />
         {/* Left: Titles and CTA */}
-        <div className="flex-1 flex flex-col items-start justify-center text-left max-w-xl">
+        <div className="flex-1 flex flex-col items-start justify-center text-left pl-36 z-1">
           <span className="uppercase tracking-widest text-sm font-semibold mb-4 text-[#A259FF]">The Creator Card of the New Era</span>
-          <h1 className="heading-font text-3xl md:text-6xl font-black leading-px-6">
+          <h1 className="heading-font text-3xl md:text-5xl font-black leading-px-6">
             YOUR SPACE.<br />
             YOUR AUDIENCE.<br />
             <span className="bg-gradient-to-r from-[#00F5A0] to-[#6B4EFF] bg-clip-text text-transparent">YOUR RULES.</span>
           </h1>
-          <p className="text-lg md:text-2xl text-zinc-200 mb-8 max-w-lg">
+          <p className="text-lg md:text-xl text-zinc-200 mt-4 mb-8 max-w-lg">
             Sell subscriptions, appointments, video calls, and digital content directly, instantly, and with low fees.
           </p>
           <form
-            className="flex flex-col sm:flex-row gap-4 mb-8 w-full"
+            className="flex flex-col sm:flex-row gap-2 mb-8 w-full"
             onSubmit={e => {
               e.preventDefault();
               const form = e.target as HTMLFormElement;
@@ -117,25 +125,25 @@ export default function Home() {
               required
               minLength={3}
               maxLength={32}
-              placeholder="Choose your alias (e.g. fabohax)"
-              className="flex-1 rounded-md px-6 py-4 text-lg font-semibold shadow-xl border border-zinc-200 focus:border-[#00F5A0] focus:ring-2 outline-none text-white bg-blur placeholder-zinc-400 transition"
+              placeholder="Claim your @alias"
+              className="flex-1 rounded-md px-6 py-4 text-lg font-semibold shadow-xl border border-white/20 focus:border-white/50 focus:ring-0 outline-none text-white bg-blur placeholder-zinc-400 transition"
               autoComplete="off"
             />
             <Button
               type="submit"
-              className="cursor-pointer h-16 bg-[#00ff62] hover:bg-[#ffffff] px-6 py-4 text-white font-bold rounded-md text-lg shadow-xl transition"
+              className="cursor-pointer h-16 bg-[#00F5A0] hover:bg-[#ffffff] px-6 py-4 text-black font-bold rounded-md text-sm shadow-xl transition"
             >
-              Get It
+              GET IT
             </Button>
           </form>
           <div className="flex flex-wrap gap-6 items-center text-zinc-300 text-base mt-4">
-            <span className="flex items-center gap-2"><span className="text-[#A259FF]">👥</span> 2,400 Active Creators</span>
-            <span className="flex items-center gap-2"><span className="text-[#00F5A0]">$</span> 180k+ USDC Paid this month</span>
-            <span className="flex items-center gap-2"><Image src="/globe.svg" alt="Solana" width={20} height={20} /> Powered by Solana</span>
+            <span className="flex items-center gap-2"><Image src="/people.svg" alt="Creators" width={20} height={20} /> 2,400 Active Creators</span>
+            <span className="flex items-center gap-2"><Image src="/wallet-money.svg" alt="Earnings" width={20} height={20} /> 180k+ USDC Paid this month</span>
+            <span className="flex items-center gap-2"><Image src="/solana-sol.svg" alt="Solana" width={20} height={20} /> Powered by Solana</span>
           </div>
         </div>
         {/* Right: Hero Card Image */}
-        <div className="flex-1 flex items-center justify-center w-full">
+        <div className="flex-1 flex items-center justify-center w-full z-10">
           <Image
             src="/hero-card-asset.png"
             alt="Creator Card Preview"
@@ -152,18 +160,22 @@ export default function Home() {
         <motion.h2 className="heading-font text-3xl md:text-4xl font-bold mb-12 text-center" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>Have your store ready in 3 minutes</motion.h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {[
-            { title: "Create your account", desc: "With your Solana wallet", icon: "💳" },
-            { title: "Customize your Card", desc: "Photos, bio, colors, sections", icon: "🎨" },
-            { title: "Add what you sell", desc: "Subscriptions, video calls, packs", icon: "🛒" },
-            { title: "Share your link", desc: "On X, Instagram, TikTok...", icon: "🔗" },
+            { title: "Create your account", desc: "With your Solana wallet", icon: "/personalcard.svg" },
+            { title: "Customize your Card", desc: "Photos, bio, colors, sections", icon: "/brush.svg" },
+            { title: "Add what you sell", desc: "Subscriptions, video calls, packs", icon: "/gift.svg" },
+            { title: "Share your link", desc: "On X, Instagram, TikTok...", icon: "/send.svg" },
           ].map((step, i) => (
-            <motion.div key={i} className="flex flex-col items-center bg-[#121212]/80 rounded-2xl p-8 shadow-lg backdrop-blur-md"
+            <motion.div key={i} className="flex flex-col text-center items-center bg-[#121212]/80 rounded-2xl p-8 shadow-lg backdrop-blur-md"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
             >
-              <span className="text-4xl mb-4">{step.icon}</span>
-              <h3 className="heading-font text-xl font-semibold mb-2 text-[#6B4EFF]">{step.title}</h3>
+              {step.icon.startsWith("/") ? (
+                <Image src={step.icon} alt={step.title} width={40} height={40} className="mb-4" />
+              ) : (
+                <span className="text-4xl mb-4">{step.icon}</span>
+              )}
+              <h3 className="heading-font text-xl mt-4 font-semibold mb-2 text-[#6B4EFF]">{step.title}</h3>
               <p className="text-zinc-300 text-center">{step.desc}</p>
             </motion.div>
           ))}
@@ -171,28 +183,32 @@ export default function Home() {
       </section>
 
       {/* Creator Cards Examples */}
-      <section className="py-20 px-4 max-w-6xl mx-auto" id="examples">
+      <section className="py-20 px-4 max-w-full mx-auto" id="examples">
         <motion.h2 className="heading-font text-3xl md:text-4xl font-bold mb-12 text-center" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>Creator Cards already earning income</motion.h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
           {creators.map((c, i) => (
             <motion.div
               key={c.username}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="hover:scale-105 transition-transform cursor-pointer"
+              className="text-white hover:scale-105 transition-transform cursor-pointer"
             >
-              <Card className="rounded-2xl bg-[#1a003a]/60 shadow-xl p-6 flex flex-col items-center">
-                <CardContent className="flex flex-col items-center p-0">
-                  <Image src={c.img} alt={c.username} width={120} height={120} className="rounded-xl mb-4" style={{ height: "auto" }} />
-                  <h3 className="heading-font text-xl font-bold mb-1">@{c.username}</h3>
+              <Card className="rounded-2xl bg-transparent shadow-xl p-0 flex flex-col items-center overflow-hidden">
+                <CardContent className="flex flex-col items-center p-0 w-full">
+                  <div className="relative w-full aspect-3/4">
+                    <Image src={c.img} alt={c.username} fill className="object-cover" />
+                  </div>
+                  <div className="flex flex-col items-center px-4 pb-4 pt-3 w-full">
+                  <h3 className="heading-font text-xl text-white font-bold mb-1">@{c.username}</h3>
                   <p className="text-zinc-300 mb-2 text-center">{c.title}</p>
                   <div className="flex gap-3 text-sm text-zinc-400 mb-2">
-                    <span>👥 {c.followers}</span>
+                    <span className="flex items-center gap-1"><Image src="/people.svg" alt="followers" width={14} height={14} /> {c.followers}</span>
                     <span>•</span>
-                    <span>👁️ {c.views}</span>
+                    <span><Image src="/eye.svg" height={10} width={10} alt="" /> {c.views}</span>
                   </div>
                   <span className="text-[#00F5A0] font-bold text-lg">{c.earned}</span>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -202,22 +218,22 @@ export default function Home() {
 
       {/* Features Grid */}
       <section className="py-20 px-4 max-w-6xl mx-auto" id="features">
-        <motion.h2 className="heading-font text-3xl md:text-4xl font-bold mb-12 text-center" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>Everything you need on one page</motion.h2>
+        <motion.h2 className="heading-font text-3xl md:text-4xl font-bold mb-12 text-center" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>Everything you need in one page</motion.h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
-            { icon: "⚡", title: "Instant Payments", desc: "Get paid in USDC or SOL instantly to your wallet." },
-            { icon: "🔄", title: "Subscriptions", desc: "Recurring payments with Streamflow." },
-            { icon: "🛍️", title: "Digital Store", desc: "Sell packs, videos, PDFs, etc. Automatic delivery." },
-            { icon: "🔗", title: "Viral Blinks", desc: "Every button generates a Blink to share on X." },
-            { icon: "🔒", title: "Gated Access", desc: "NFTs or on-chain verification for private content." },
-            { icon: "💸", title: "Tips", desc: "Receive instant tips from your fans." },
+            { icon: "/flash.svg", title: "Instant Payments", desc: "Get paid in USDC or SOL instantly to your wallet." },
+            { icon: "/heart-add.svg", title: "Subscriptions", desc: "Recurring payments with Streamflow." },
+            { icon: "/gift.svg", title: "Digital Store", desc: "Sell packs, videos, PDFs, etc. Automatic delivery." },
+            { icon: "/send-2.svg", title: "Viral Blinks", desc: "Every button generates a Blink to share on X." },
+            { icon: "/verify.svg", title: "Gated Access", desc: "NFTs or on-chain verification for private content." },
+            { icon: "/wallet-money.svg", title: "Tips", desc: "Receive instant tips from your fans." },
           ].map((f, i) => (
             <motion.div key={f.title} className="flex flex-col items-center bg-[#121212]/80 rounded-2xl p-8 shadow-lg backdrop-blur-md"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
             >
-              <span className="text-4xl mb-4">{f.icon}</span>
+              <Image src={f.icon} alt={f.title} width={40} height={40} className="mb-4" />
               <h3 className="heading-font text-xl font-semibold mb-2 text-[#00F5A0]">{f.title}</h3>
               <p className="text-zinc-300 text-center">{f.desc}</p>
             </motion.div>
