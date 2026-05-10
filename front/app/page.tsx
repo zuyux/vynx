@@ -51,11 +51,6 @@ export default function Home() {
   ], []);
 
 
-  // Redirect to dashboard if just connected
-  if (typeof window !== "undefined" && isConnected) {
-    window.location.replace("/dashboard");
-    return null;
-  }
   if (isLoading) return <p>Loading...</p>;
 
   return (
@@ -78,9 +73,10 @@ export default function Home() {
             </Button>
           ) : (
             <div className="flex gap-2 items-center">
-              <span className="text-xs md:text-base">{addresses?.[0]?.address}</span>
-              <Button variant="outline" onClick={() => disconnect()} className="text-xs md:text-base">Disconnect</Button>
-              <Button variant="outline" onClick={() => solana.signMessage("Hello!")} className="text-xs md:text-base">Sign Message</Button>
+              <span className="text-xs md:text-small text-white/10">{addresses?.[0]?.address}</span>
+              <Button variant="outline" onClick={() => disconnect()} className="cursor-pointer px-3 py-5 bg-transparent hover:bg-transparent border border-white/20">
+                <Image src="/logout.svg" alt="Disconnect" width={20} height={20} />
+              </Button>
             </div>
           )}
           <Button className="cursor-pointer bg-[#00F5A0] text-[#000000] rounded-md px-6 py-5 font-semibold hover:bg-[#6B4EFF] transition text-sm">GET CARD</Button>
@@ -115,7 +111,11 @@ export default function Home() {
               const form = e.target as HTMLFormElement;
               const alias = (form.elements.namedItem('alias') as HTMLInputElement)?.value.trim();
               if (alias) {
-                window.location.href = `/auth/callback?page=signup&alias=${encodeURIComponent(alias)}`;
+                if (isConnected) {
+                  window.location.href = `/profile/buy-alias?alias=${encodeURIComponent(alias)}`;
+                } else {
+                  window.location.href = `/auth/callback?alias=${encodeURIComponent(alias)}`;
+                }
               }
             }}
           >

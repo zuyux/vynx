@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
 
   const rpcUrl =
     process.env.NEXT_PUBLIC_SOLANA_RPC_URL ??
-    "https://api.mainnet-beta.solana.com";
+    "https://rpc.ankr.com/solana";
   const connection = new Connection(rpcUrl, "confirmed");
 
   const senderPubkey = new PublicKey(account);

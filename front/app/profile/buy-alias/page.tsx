@@ -15,7 +15,7 @@ const CLAIM_PRICE_SOL = 0.00001;
 const CLAIM_PRICE_LAMPORTS = Math.round(CLAIM_PRICE_SOL * LAMPORTS_PER_SOL);
 const RPC_URL =
   process.env.NEXT_PUBLIC_SOLANA_RPC_URL ??
-  "https://api.mainnet-beta.solana.com";
+  "https://rpc.ankr.com/solana";
 const TREASURY = process.env.NEXT_PUBLIC_TREASURY_WALLET ?? "";
 
 type Step = "idle" | "building" | "signing" | "registering" | "done" | "error";
@@ -93,7 +93,7 @@ export default function BuyAliasPage() {
       }
 
       setStep("done");
-      setTimeout(() => router.push("/dashboard"), 1800);
+      setTimeout(() => router.push("/profile"), 1800);
     } catch (err: unknown) {
       setStep("error");
       setErrorMsg(err instanceof Error ? err.message : "Something went wrong");
@@ -154,7 +154,7 @@ export default function BuyAliasPage() {
 
         {/* CTA */}
         <Button
-          className="w-full bg-[#00F5A0] hover:bg-[#6B4EFF] text-black font-bold rounded-md py-4 text-base shadow-xl transition disabled:opacity-50"
+          className="cursor-pointer w-full bg-[#00F5A0] hover:bg-[#6B4EFF] text-black font-bold rounded-md py-4 text-base shadow-xl transition disabled:opacity-50"
           disabled={busy || step === "done" || !alias}
           onClick={handleClaim}
         >
