@@ -6,6 +6,7 @@ declare_id!("ASqvNsj2EWDQmhbnpGoxqqTue7uyWAvSv36GixqpfJop");
 // 0.00001 SOL in lamports (1 SOL = 1_000_000_000 lamports)
 const CLAIM_FEE: u64 = 10_000;
 const MAX_ALIAS_LEN: usize = 32;
+const TREASURY_PUBKEY: &str = "DmXZFxeBZbDFM55aSDEcCXqcSnBJBs4U32HMt197MY4E";
 
 // ─── Program ─────────────────────────────────────────────────────────────────
 
@@ -67,6 +68,72 @@ pub mod vynx_alias_claim {
         // Anchor closes the accounts automatically via `close = owner` in the context.
         Ok(())
     }
+
+    /// Transfer an alias to a new owner.
+    /// Closes the old WalletRecord, creates a new one for the recipient, and updates AliasRecord.owner.
+    pub fn transfer_alias(ctx: Context<TransferAlias>) -> Result<()> {
+        // Only the current owner can transfer
+        require_keys_eq!(ctx.accounts.owner.key(), ctx.accounts.alias_record.owner, VynxError::Unauthorized);
+
+        // Update AliasRecord owner
+        let alias_record = &mut ctx.accounts.alias_record;
+        alias_record.owner = ctx.accounts.new_owner.key();
+
+        // Close old WalletRecord (rent goes to old owner)
+        // Anchor will close it automatically via close = owner
+
+        // Create new WalletRecord for new owner
+        let wallet_record = &mut ctx.accounts.new_wallet_record;
+        wallet_record.owner = ctx.accounts.new_owner.key();
+        wallet_record.alias = ctx.accounts.alias_record.alias.clone();
+
+        emit!(AliasTransferred {
+            from: ctx.accounts.owner.key(),
+            to: ctx.accounts.new_owner.key(),
+            alias: ctx.accounts.alias_record.alias.clone(),
+        });
+
+        Ok(())
+    }
+#[derive(Accounts)]
+pub struct TransferAlias<'info> {
+    #[account(mut)]
+    pub owner: Signer<'info>,
+
+    /// The alias record to update (must match current owner)
+    #[account(
+        mut,
+        seeds = [b"alias", alias_record.alias.as_bytes()],
+        bump,
+    )]
+    pub alias_record: Account<'info, AliasRecord>,
+
+    /// The old wallet record (will be closed)
+    #[account(
+        mut,
+        seeds = [b"wallet", owner.key().as_ref()],
+        bump,
+        has_one = owner,
+        close = owner,
+    )]
+    pub old_wallet_record: Account<'info, WalletRecord>,
+
+    /// The new owner who will receive the alias
+    #[account(mut)]
+    pub new_owner: Signer<'info>,
+
+    /// The new wallet record for the recipient
+    #[account(
+        init,
+        payer = new_owner,
+        space = WalletRecord::SPACE,
+        seeds = [b"wallet", new_owner.key().as_ref()],
+        bump,
+    )]
+    pub new_wallet_record: Account<'info, WalletRecord>,
+
+    pub system_program: Program<'info, System>,
+}
 }
 
 // ─── Validation ──────────────────────────────────────────────────────────────
@@ -87,8 +154,12 @@ pub struct ClaimAlias<'info> {
 
     /// Treasury wallet that receives the claim fee.
     /// CHECK: Unchecked — we only transfer lamports to it; no data is read or written.
-    #[account(mut)]
+    #[account(mut, address = crate::treasury_pubkey())]
     pub treasury: UncheckedAccount<'info>,
+// Helper to parse the hardcoded treasury pubkey
+pub fn treasury_pubkey() -> Pubkey {
+    Pubkey::from_str(TREASURY_PUBKEY).expect("Invalid hardcoded treasury pubkey")
+}
 
     /// One AliasRecord per unique alias string.
     #[account(
@@ -186,6 +257,13 @@ pub struct AliasReleased {
     pub alias: String,
 }
 
+#[event]
+pub struct AliasTransferred {
+    pub from: Pubkey,
+    pub to: Pubkey,
+    pub alias: String,
+}
+
 // ─── Errors ──────────────────────────────────────────────────────────────────
 
 #[error_code]
@@ -194,4 +272,6 @@ pub enum VynxError {
     InvalidAliasLength,
     #[msg("Alias may only contain lowercase letters (a-z), digits (0-9), and underscores (_).")]
     InvalidAliasCharacters,
+    #[msg("Only the alias owner can transfer it.")]
+    Unauthorized,
 }
