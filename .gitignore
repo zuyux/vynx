@@ -1,12 +1,16 @@
-# Node dependencies
-node_modules/
+# -- Node / Next.js -----------------------------------------------------------
+front/node_modules/
 .pnp
 .pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 yarn.lock
 package-lock.json
 pnpm-lock.yaml
 
-# Next.js build output
 .next/
 out/
 build/
@@ -15,75 +19,53 @@ build/
 .cache/
 .parcel-cache/
 
-# Testing
 coverage/
 
-# Environment and secrets
-.env*
-*.pem
+*.tsbuildinfo
+.eslintcache
+next-env.d.ts
 
-# IDE/editor/project files
-.DS_Store
-.idea/
-.vscode/
-.history/
-*.sublime*
-
-# Debug/log files
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 *.log
 
-# Misc
 .vercel/
 .npm/
 .tmp/
-*.tsbuildinfo
-.eslintcache
-next-env.d.ts
 
-# Ignore output from shadcn/ui
-components.json
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# -- front/ specific ----------------------------------------------------------
+front/node_modules/
+front/.next/
+front/out/
+front/build/
+front/.turbo/
+front/.swc/
+front/.cache/
+front/package-lock.json
+front/yarn.lock
+front/pnpm-lock.yaml
+front/next-env.d.ts
+front/*.tsbuildinfo
+front/.eslintcache
+front/components.json
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+# -- Rust / Cargo / Anchor ----------------------------------------------------
+target/
+.anchor/
 
-# testing
-/coverage
+# Program deploy keypairs -- NEVER commit private keys
+target/deploy/*-keypair.json
 
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
+# -- Secrets / Environment -----------------------------------------------------
 .env*
+*.pem
+*.key
 
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# -- OS / Editor ---------------------------------------------------------------
+.DS_Store
+.idea/
+.vscode/
+.history/
+*.sublime*
