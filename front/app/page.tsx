@@ -1,20 +1,20 @@
 
 "use client";
+
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import dynamic from "next/dynamic";
 import { useMemo } from "react";
-
-// Phantom wallet connect (dynamically import to avoid SSR issues)
-const WalletConnectButton = dynamic(
-  () => import("@solana/wallet-adapter-react-ui").then((mod) => mod.WalletConnectButton),
-  { ssr: false }
-);
+import { useModal, usePhantom, useAccounts, useDisconnect, useSolana } from "@phantom/react-sdk";
 
 export default function Home() {
-  // Example creator cards (mock data)
+  const { open } = useModal();
+  const { isConnected, isLoading } = usePhantom();
+  const addresses = useAccounts();
+  const { disconnect } = useDisconnect();
+  const { solana } = useSolana();
+
   const creators = useMemo(() => [
     {
       username: "LunaSol",
@@ -50,8 +50,16 @@ export default function Home() {
     },
   ], []);
 
+
+  // Redirect to dashboard if just connected
+  if (typeof window !== "undefined" && isConnected) {
+    window.location.replace("/dashboard");
+    return null;
+  }
+  if (isLoading) return <p>Loading...</p>;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A0A0A] via-[#1a003a] to-[#00F5A0]/10 text-white font-sans">
+    <div className="min-h-screen bg-linear-to-br from-[#3b0149] to-[#000] text-white font-sans">
       {/* Navbar */}
       <nav className="flex items-center justify-between px-8 py-6 w-full max-w-7xl mx-auto">
         <div className="flex items-center gap-3">
@@ -64,17 +72,27 @@ export default function Home() {
           <a href="#examples" className="hover:text-[#6B4EFF] transition">Reviews</a>
         </div>
         <div className="flex gap-4 items-center">
-          <WalletConnectButton className="!bg-[#6B4EFF] !text-white !rounded-md !px-6 !py-2 !font-semibold !shadow-lg !bg-white cursor-pointer" />
+          {!isConnected ? (
+            <Button className="bg-white text-black rounded-md px-6 py-2 font-semibold shadow-lg cursor-pointer" onClick={open}>
+              Connect Wallet
+            </Button>
+          ) : (
+            <div className="flex gap-2 items-center">
+              <span className="text-xs md:text-base">{addresses?.[0]?.address}</span>
+              <Button variant="outline" onClick={() => disconnect()} className="text-xs md:text-base">Disconnect</Button>
+              <Button variant="outline" onClick={() => solana.signMessage("Hello!")} className="text-xs md:text-base">Sign Message</Button>
+            </div>
+          )}
           <Button className="cursor-pointer hidden md:inline-block bg-[#00F5A0] text-black rounded-md px-6 py-0 font-semibold hover:bg-[#6B4EFF] hover:text-white transition">Get Card</Button>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="flex flex-col md:flex-row items-center justify-between gap-12 py-24 px-4 max-w-7xl mx-auto w-full">
+      <section className="flex flex-col md:flex-row items-center justify-between gap-12 py-2 px-4 max-w-7xl mx-auto w-full">
         {/* Left: Titles and CTA */}
         <div className="flex-1 flex flex-col items-start justify-center text-left max-w-xl">
           <span className="uppercase tracking-widest text-sm font-semibold mb-4 text-[#A259FF]">The Creator Card of the New Era</span>
-          <h1 className="text-5xl md:text-6xl font-black leading-tight mb-4">
+          <h1 className="heading-font text-3xl md:text-6xl font-black leading-px-6">
             YOUR SPACE.<br />
             YOUR AUDIENCE.<br />
             <span className="bg-gradient-to-r from-[#00F5A0] to-[#6B4EFF] bg-clip-text text-transparent">YOUR RULES.</span>
@@ -82,14 +100,34 @@ export default function Home() {
           <p className="text-lg md:text-2xl text-zinc-200 mb-8 max-w-lg">
             Sell subscriptions, appointments, video calls, and digital content directly, instantly, and with low fees.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 mb-8 w-full">
-            <Button className="flex-1 cursor-pointer bg-gradient-to-r from-[#00F5A0] to-[#6B4EFF] text-black font-bold rounded-md px-8 py-4 text-lg shadow-xl hover:from-[#6B4EFF] hover:to-[#00F5A0] hover:text-white transition">
-              Get my Creator Card free <span className="ml-2">⚡</span>
+          <form
+            className="flex flex-col sm:flex-row gap-4 mb-8 w-full"
+            onSubmit={e => {
+              e.preventDefault();
+              const form = e.target as HTMLFormElement;
+              const alias = (form.elements.namedItem('alias') as HTMLInputElement)?.value.trim();
+              if (alias) {
+                window.location.href = `/auth/callback?page=signup&alias=${encodeURIComponent(alias)}`;
+              }
+            }}
+          >
+            <input
+              type="text"
+              name="alias"
+              required
+              minLength={3}
+              maxLength={32}
+              placeholder="Choose your alias (e.g. fabohax)"
+              className="flex-1 rounded-md px-6 py-4 text-lg font-semibold shadow-xl border border-zinc-200 focus:border-[#00F5A0] focus:ring-2 outline-none text-white bg-blur placeholder-zinc-400 transition"
+              autoComplete="off"
+            />
+            <Button
+              type="submit"
+              className="cursor-pointer h-16 bg-[#00ff62] hover:bg-[#ffffff] px-6 py-4 text-white font-bold rounded-md text-lg shadow-xl transition"
+            >
+              Get It
             </Button>
-            <Button variant="outline" className="flex-1 cursor-pointer border border-[#6B4EFF] text-[#6B4EFF] rounded-md px-8 py-4 text-lg font-bold hover:bg-[#6B4EFF] hover:text-white transition">
-              See examples <span className="ml-2">▶</span>
-            </Button>
-          </div>
+          </form>
           <div className="flex flex-wrap gap-6 items-center text-zinc-300 text-base mt-4">
             <span className="flex items-center gap-2"><span className="text-[#A259FF]">👥</span> 2,400 Active Creators</span>
             <span className="flex items-center gap-2"><span className="text-[#00F5A0]">$</span> 180k+ USDC Paid this month</span>
@@ -104,13 +142,14 @@ export default function Home() {
             width={420}
             height={520}
             priority
+            style={{ height: "auto" }}
           />
         </div>
       </section>
 
       {/* How it works */}
       <section className="py-20 px-4 max-w-5xl mx-auto" id="features">
-        <motion.h2 className="text-3xl md:text-4xl font-bold mb-12 text-center" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>Have your store ready in 3 minutes</motion.h2>
+        <motion.h2 className="heading-font text-3xl md:text-4xl font-bold mb-12 text-center" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>Have your store ready in 3 minutes</motion.h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {[
             { title: "Create your account", desc: "With your Solana wallet", icon: "💳" },
@@ -124,7 +163,7 @@ export default function Home() {
               transition={{ duration: 0.5, delay: i * 0.1 }}
             >
               <span className="text-4xl mb-4">{step.icon}</span>
-              <h3 className="text-xl font-semibold mb-2 text-[#6B4EFF]">{step.title}</h3>
+              <h3 className="heading-font text-xl font-semibold mb-2 text-[#6B4EFF]">{step.title}</h3>
               <p className="text-zinc-300 text-center">{step.desc}</p>
             </motion.div>
           ))}
@@ -133,7 +172,7 @@ export default function Home() {
 
       {/* Creator Cards Examples */}
       <section className="py-20 px-4 max-w-6xl mx-auto" id="examples">
-        <motion.h2 className="text-3xl md:text-4xl font-bold mb-12 text-center" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>Creator Cards already earning income</motion.h2>
+        <motion.h2 className="heading-font text-3xl md:text-4xl font-bold mb-12 text-center" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>Creator Cards already earning income</motion.h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
           {creators.map((c, i) => (
             <motion.div
@@ -145,8 +184,8 @@ export default function Home() {
             >
               <Card className="rounded-2xl bg-[#1a003a]/60 shadow-xl p-6 flex flex-col items-center">
                 <CardContent className="flex flex-col items-center p-0">
-                  <Image src={c.img} alt={c.username} width={120} height={120} className="rounded-xl mb-4" />
-                  <h3 className="text-xl font-bold mb-1">@{c.username}</h3>
+                  <Image src={c.img} alt={c.username} width={120} height={120} className="rounded-xl mb-4" style={{ height: "auto" }} />
+                  <h3 className="heading-font text-xl font-bold mb-1">@{c.username}</h3>
                   <p className="text-zinc-300 mb-2 text-center">{c.title}</p>
                   <div className="flex gap-3 text-sm text-zinc-400 mb-2">
                     <span>👥 {c.followers}</span>
@@ -163,7 +202,7 @@ export default function Home() {
 
       {/* Features Grid */}
       <section className="py-20 px-4 max-w-6xl mx-auto" id="features">
-        <motion.h2 className="text-3xl md:text-4xl font-bold mb-12 text-center" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>Everything you need on one page</motion.h2>
+        <motion.h2 className="heading-font text-3xl md:text-4xl font-bold mb-12 text-center" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>Everything you need on one page</motion.h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
             { icon: "⚡", title: "Instant Payments", desc: "Get paid in USDC or SOL instantly to your wallet." },
@@ -179,7 +218,7 @@ export default function Home() {
               transition={{ duration: 0.5, delay: i * 0.1 }}
             >
               <span className="text-4xl mb-4">{f.icon}</span>
-              <h3 className="text-xl font-semibold mb-2 text-[#00F5A0]">{f.title}</h3>
+              <h3 className="heading-font text-xl font-semibold mb-2 text-[#00F5A0]">{f.title}</h3>
               <p className="text-zinc-300 text-center">{f.desc}</p>
             </motion.div>
           ))}
