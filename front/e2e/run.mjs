@@ -26,7 +26,7 @@ function docker(args, options = {}) {
 }
 const registry = process.env.E2E_ALIAS_REGISTRY === '1';
 const sponsor = Keypair.generate();
-const env = { ...process.env, VYNX_ALIAS_REGISTRY_ENABLED: String(registry), VYNX_ALIAS_SPONSOR_KEYPAIR_PATH: '', VYNX_ALIAS_SPONSOR_SECRET_KEY: registry ? JSON.stringify(Array.from(sponsor.secretKey)) : '', SUPABASE_URL: `http://127.0.0.1:${fixturePort}`, SUPABASE_ANON_KEY: token('anon'), SUPABASE_SECRET_KEY: token('service_role'), NEXT_PUBLIC_TREASURY_WALLET: Keypair.generate().publicKey.toBase58(), NEXT_PUBLIC_SOLANA_RPC_URL: `http://127.0.0.1:${fixturePort}/rpc`, NEXT_PUBLIC_APP_URL: `http://localhost:${appPort}`, NEXT_PUBLIC_PHANTOM_APP_ID: '', E2E_BASE_URL: `http://localhost:${appPort}`, E2E_FIXTURE_URL: `http://127.0.0.1:${fixturePort}` };
+const env = { ...process.env, VYNX_ALIAS_REGISTRY_ENABLED: String(registry), VYNX_ALIAS_SPONSOR_KEYPAIR_PATH: '', VYNX_ALIAS_SPONSOR_SECRET_KEY: registry ? JSON.stringify(Array.from(sponsor.secretKey)) : '', SUPABASE_URL: `http://127.0.0.1:${fixturePort}`, SUPABASE_ANON_KEY: token('anon'), SUPABASE_SECRET_KEY: token('service_role'), NEXT_PUBLIC_TREASURY_WALLET: Keypair.generate().publicKey.toBase58(), NEXT_PUBLIC_SOLANA_RPC_URL: `http://127.0.0.1:${fixturePort}/rpc`, NEXT_PUBLIC_APP_URL: `http://localhost:${appPort}`, NEXT_PUBLIC_PHANTOM_APP_ID: '', KORA_RPC_URL: `http://127.0.0.1:${fixturePort}/kora`, KORA_API_KEY: '', E2E_BASE_URL: `http://localhost:${appPort}`, E2E_FIXTURE_URL: `http://127.0.0.1:${fixturePort}` };
 let fixture;
 let application;
 async function run(command, args) {
@@ -55,7 +55,7 @@ try {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
   if (!restReady) throw new Error('Test PostgREST did not become ready.');
-  fixture = await fixtureServer(`http://127.0.0.1:${dbPort}`, registry ? { sponsor, treasury: env.NEXT_PUBLIC_TREASURY_WALLET } : undefined);
+  fixture = await fixtureServer(`http://127.0.0.1:${dbPort}`, registry ? { sponsor, treasury: env.NEXT_PUBLIC_TREASURY_WALLET } : undefined, env.SUPABASE_SECRET_KEY);
   await new Promise((resolve, reject) => { fixture.once('error', reject); fixture.listen(fixturePort, '127.0.0.1', resolve); });
   // Public env values are compiled into client bundles; build with the isolated configuration.
   await run('npm', ['run', 'build']);

@@ -1,3 +1,5 @@
+import { storedCreatorImage } from './creator-image-policy';
+
 export type CreatorLink = { id: string; title: string; url: string };
 export type CreatorDraft = {
   version: 1; alias: string; name: string; bio: string; avatar: string; cover: string;
@@ -21,6 +23,7 @@ export function readDraft(raw: string | null): CreatorDraft {
   const bounded = (v: unknown, max: number) => typeof v === 'string' && v.length <= max;
   const image = (v: unknown) => {
     if (v === '') return true;
+    if (typeof v === 'string' && v.length <= 2048 && storedCreatorImage(v)) return true;
     if (!bounded(v, 1500000) || typeof v !== 'string' || !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(v)) return false;
     const base64 = v.slice(v.indexOf(',') + 1);
     const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;

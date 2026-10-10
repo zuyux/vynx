@@ -38,6 +38,7 @@ export function validateEnvironment(env) {
     "SUPABASE_URL",
     "NEXT_PUBLIC_SOLANA_RPC_URL",
     "NEXT_PUBLIC_APP_URL",
+    "KORA_RPC_URL",
   ]) {
     const value = env[key]?.trim();
     if (value && !PLACEHOLDER_PATTERN.test(value) && !isUrl(value)) {
@@ -67,7 +68,7 @@ export function validateEnvironment(env) {
   }
 
   const leakedSecret = Object.keys(env).find(
-    (key) => key.startsWith("NEXT_PUBLIC_") && /SUPABASE|SECRET|SERVICE_ROLE|PRIVATE_KEY|KEYPAIR/.test(key)
+    (key) => key.startsWith("NEXT_PUBLIC_") && /SUPABASE|SECRET|SERVICE_ROLE|PRIVATE_KEY|KEYPAIR|KORA_API_KEY|KORA_HMAC/.test(key)
   );
   if (leakedSecret) {
     errors.push(`${leakedSecret} looks like a secret but uses the public NEXT_PUBLIC_ prefix.`);

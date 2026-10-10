@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     if (!profile) throw new ApiError('Claim your alias to open the dashboard.', 409);
     const [summary, recent] = await Promise.all([
       db.rpc('creator_tip_summary', { owner_wallet: wallet }),
-      db.from('tips').select('id,lamports,signature,created_at').eq('creator_id', profile.id).order('created_at', { ascending: false }).limit(10),
+      db.from('tips').select('id,lamports,currency,token_amount,signature,created_at').eq('creator_id', profile.id).order('created_at', { ascending: false }).limit(10),
     ]);
     if (summary.error || recent.error) throw new ApiError('Unable to load your tips right now. Please retry.', 503);
     return Response.json({ profile, tips: { ...summary.data, recent: recent.data } }, { headers: { 'Cache-Control': 'no-store' } });

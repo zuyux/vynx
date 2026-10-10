@@ -153,7 +153,7 @@ Goal: make alias purchase atomic, verifiable, and safe to retry.
 - [x] **P1** Decide the on-chain registry direction: a new VYNX Anchor registry is deployed and smoke-tested on devnet; new claims use the registry by default; Supabase remains the profile index.
 - [x] **P1** Implement registry instructions, canonical alias/owner PDAs, configurable SOL tiers, admin controls and sponsor authorization; verify signed transactions locally and on devnet. See [chain/README.md](chain/README.md).
 - [x] **P1** Integrate the registry into the frontend/API: read on-chain pricing, sponsor and build registration instructions, support 1–30 character names, and verify both ownership PDAs.
-- [ ] **P0** Reconcile and migrate existing verified claims without charging again. Registry mode now rejects plain treasury claim payments and blocks database-only owners until migration.
+- [x] **P0** Reconcile and migrate existing verified claims without charging again. Admin-and-owner signed, zero-charge migration and audit/prepare/reconcile tooling are implemented. The devnet program was upgraded and a live disposable-wallet migration verified zero creator charge and both ownership PDAs. The configured Supabase audit found one registry-backed claim and zero legacy claims, so no existing owners require signatures. Registry lookup and access controls passed on a Vercel preview. Database-only claims remain blocked until verified migration. See [migration procedure and verification evidence](docs/alias-claim-migration.md).
 
 Acceptance criteria:
 
@@ -180,8 +180,8 @@ Goal: replace the dashboard mock with creator-owned data.
 - [x] **P0** Make “Save Changes” persist data and show saving, success, and error states.
 - [x] **P0** Keep the claimed username read-only in the editor.
 - [x] **P1** Add field length limits and URL validation.
-- [ ] **P1** Add image upload using Supabase Storage with MIME type and size limits.
-- [ ] **P1** Remove replaced images to avoid orphaned storage objects.
+- [x] **P1** Add image upload using Supabase Storage with MIME type and size limits. Creator-owned saves upload validated PNG/JPEG/WebP images (1 MB, 6000 pixels per side) and persist public Storage URLs. Unit/API, browser, and hosted preview/devnet checks passed. See [setup and verification](docs/creator-image-storage.md).
+- [x] **P1** Remove replaced images to avoid orphaned storage objects. Atomic cleanup queue, reference guards, safe deletion/retry, interrupted-upload recovery and older-object discovery are implemented. Migration 007 is active; hosted preview verified replacement/removal deletion and preservation of the new image. Older-object discovery found no untracked candidates. See [cleanup procedure](docs/creator-image-cleanup.md).
 - [x] **P1** Make the dashboard and editor usable on mobile; replace the fixed-width sidebar with responsive navigation.
 - [x] **P1** Add unsaved-changes protection.
 

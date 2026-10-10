@@ -79,6 +79,88 @@
       ]
     },
     {
+      "name": "migrate_verified_claim",
+      "discriminator": [26, 34, 5, 206, 61, 166, 231, 161],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": ["config"]
+        },
+        {
+          "name": "owner",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 111, 110, 102, 105, 103]
+              }
+            ]
+          }
+        },
+        {
+          "name": "alias_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [97, 108, 105, 97, 115]
+              },
+              {
+                "kind": "arg",
+                "path": "alias"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_index",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [111, 119, 110, 101, 114]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "alias",
+          "type": "string"
+        },
+        {
+          "name": "expires_at_slot",
+          "type": "u64"
+        },
+        {
+          "name": "claim_id",
+          "type": {
+            "array": [
+              "u8",
+              16
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "nominate_admin",
       "discriminator": [134, 11, 31, 244, 20, 77, 138, 121],
       "accounts": [
@@ -194,7 +276,10 @@
         {
           "name": "intent_id",
           "type": {
-            "array": ["u8", 16]
+            "array": [
+              "u8",
+              16
+            ]
           }
         }
       ]
@@ -254,7 +339,10 @@
         {
           "name": "tiers",
           "type": {
-            "array": ["u64", 5]
+            "array": [
+              "u64",
+              5
+            ]
           }
         }
       ]
@@ -324,7 +412,7 @@
     {
       "code": 6003,
       "name": "InvalidAlias",
-      "msg": "Use 1–30 canonical lowercase ASCII letters, digits or underscores."
+      "msg": "Use 1\u201330 canonical lowercase ASCII letters, digits or underscores."
     },
     {
       "code": 6004,
@@ -365,6 +453,11 @@
       "code": 6011,
       "name": "Overflow",
       "msg": "Arithmetic overflow."
+    },
+    {
+      "code": 6012,
+      "name": "MigrationRequiresPause",
+      "msg": "Pause registration before migrating verified legacy claims."
     }
   ],
   "types": [
@@ -396,7 +489,10 @@
           {
             "name": "intent_id",
             "type": {
-              "array": ["u8", 16]
+              "array": [
+                "u8",
+                16
+              ]
             }
           }
         ]
@@ -426,7 +522,10 @@
           {
             "name": "tiers",
             "type": {
-              "array": ["u64", 5]
+              "array": [
+                "u64",
+                5
+              ]
             }
           },
           {
@@ -456,13 +555,19 @@
           {
             "name": "old_tiers",
             "type": {
-              "array": ["u64", 5]
+              "array": [
+                "u64",
+                5
+              ]
             }
           },
           {
             "name": "new_tiers",
             "type": {
-              "array": ["u64", 5]
+              "array": [
+                "u64",
+                5
+              ]
             }
           },
           {

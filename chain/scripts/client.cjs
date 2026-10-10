@@ -142,6 +142,17 @@ function registerIx(
     ]),
   );
 }
+function migrateIx(admin, owner, alias, expiry, claimId) {
+  if (normalizeAlias(alias) !== alias || claimId.length !== 16) throw Error("Invalid migration arguments");
+  const name = Buffer.from(alias);
+  const length = Buffer.alloc(4);
+  length.writeUInt32LE(name.length);
+  return instruction("migrate_verified_claim", [
+    key(admin, true, true), key(owner, true), key(configPda()),
+    key(aliasPda(alias), false, true), key(ownerPda(owner), false, true),
+    key(SystemProgram.programId),
+  ], Buffer.concat([length, name, u64(expiry), claimId]));
+}
 function verifyAccount(info, name) {
   if (
     !info ||
@@ -197,6 +208,7 @@ module.exports = {
   adminIx,
   pricesIx,
   registerIx,
+  migrateIx,
   decodeConfig,
   decodeAlias,
 };

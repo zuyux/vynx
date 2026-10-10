@@ -1,6 +1,6 @@
 # VYNX alias registry (devnet implementation)
 
-The program implements permanent on-chain VYNX aliases, one alias per wallet, one owner per alias, configurable SOL prices, reserved names, sponsored registration authorization, pause controls, and two-step admin rotation. The frontend still uses the Supabase MVP flow. Deploying this program does not migrate existing users or switch application ownership.
+The program implements permanent on-chain VYNX aliases, one alias per wallet, one owner per alias, configurable SOL prices, reserved names, sponsored registration authorization, pause controls, and two-step admin rotation. The frontend uses the registry for new claims and Supabase as its profile index. Existing claims require a verified, owner-approved migration; deploying the program alone does not migrate users.
 
 Deployed and initialized on Solana devnet on October 9, 2026 (America/Lima). Program address:
 
@@ -75,3 +75,7 @@ The sponsor co-signs the full transaction: this binds the program, accounts, own
 Registration computes current required deposits and sends the remainder of the total to the configured treasury. Prefunded PDA donations do not discount the creator's total: only deposits actually paid by the creator are subtracted from the treasury payment. Failed transactions roll back account creation and transfers, although the sponsor can still pay network fees.
 
 The included client constructs known instructions directly; the generated Anchor IDL is the source of truth for other clients. Production admission rate limits, durable sponsorship tracking, frontend integration, existing-claim migration and independent security review remain required before cutover/mainnet. The local admin/sponsor keys are development keys, not production credentials.
+
+## Legacy migration
+
+The new `migrate_verified_claim` instruction requires paused registration, current admin and owner signatures, and a short expiry. The admin pays deposits; the creator pays zero. The program upgrade and a zero-charge disposable-wallet migration were verified on devnet on October 10, 2026 (America/Lima); public evidence is in `devnet-migration-smoke.json`. Run `npm run smoke:migration:devnet` to repeat with a fresh disposable owner; this briefly pauses registration and restores the original pause state. Follow the [audit and migration procedure](../docs/alias-claim-migration.md).

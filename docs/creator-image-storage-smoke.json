@@ -1,0 +1,18 @@
+{
+  "verifiedAt": "2026-10-10T07:02:18.862Z",
+  "deployment": "https://vynx-7mbex4ock-fabohaxs-projects.vercel.app",
+  "network": "devnet",
+  "alias": "img_7fce6712905bedd8",
+  "owner": "3EL2yBTg45MPGNgzaLbjjVprk2Nnb5dujmjuY2sQ4FEf",
+  "claimSignature": "4GU6NWSNZnUnmmwD6VwfpKp8zmyKMuFbiSG6gJYUfcYL43bs8pvks6FuGgNchoXpNaaMazQS98yrWbjkGmCyknhC",
+  "checks": [
+    "wallet-authenticated-upload",
+    "public-image-read",
+    "URL-persistence",
+    "public-card",
+    "corrupt-file-rejection",
+    "anonymous-rejection"
+  ],
+  "disposableTest": true,
+  "cleanup": "Temporary creator profile, images, sessions and challenges removed; immutable devnet alias and sponsorship payment audit retained."
+}

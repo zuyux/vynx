@@ -1,0 +1,18 @@
+{
+  "verified_at": "2026-10-10",
+  "app_url": "https://vynx.me",
+  "deployment_url": "https://vynx-pkh99r73z-fabohaxs-projects.vercel.app",
+  "deployment_id": "dpl_77dwy6dS6ZYuyRgiv1WcEjurnwNv",
+  "kora_url": "https://kora.ossr.network",
+  "cluster": "devnet",
+  "currency": "USDC",
+  "amount": "0.01",
+  "creator": "fabohax",
+  "creator_page_http_status": 200,
+  "tip_api_http_status": 200,
+  "sponsor_signature_valid": true,
+  "confirmation_api_ok": true,
+  "fan_sol_before_and_after": 0,
+  "transaction_signature": "3WuDeGJrme47gwQ88497KRTkVLhg6V5MjsRtQuWZq7bTQpivRcLRbCvhLydex4HoyCoj1TALTEnYzE8ez2MtqXq7",
+  "unauthenticated_kora_http_status": 401
+}

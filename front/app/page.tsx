@@ -66,13 +66,14 @@ export default function Home() {
         const { profile } = await response.json();
         if (!controller.signal.aborted) {
           setCard(profile?.wallet_address === wallet ? { wallet, alias: profile.username } : null);
+          if (profile?.wallet_address === wallet) router.replace(`/${encodeURIComponent(profile.username)}`);
         }
       })
       .catch(() => {
         // Keep the claim action available if profile lookup is unavailable.
       });
     return () => controller.abort();
-  }, [wallet]);
+  }, [wallet, router]);
 
   const handleSignIn = async (alias?: string) => {
     setIsDisconnecting(true); setDisconnectError('');
@@ -82,7 +83,7 @@ export default function Home() {
         const response = await fetch('/api/auth/session', { cache: 'no-store' });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error);
-        router.push(result.alias ? '/dashboard/card' : `/profile/buy-alias?${new URLSearchParams({ alias, next: '/dashboard/card' })}`);
+        router.push(result.alias ? `/${encodeURIComponent(result.alias)}` : `/profile/buy-alias?${new URLSearchParams({ alias, next: '/dashboard/card' })}`);
         router.refresh();
       }
     } catch (reason) { setDisconnectError(reason instanceof Error ? reason.message : 'Unable to sign in. Retry.'); }

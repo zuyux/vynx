@@ -1,0 +1,11 @@
+{
+  "network": "devnet",
+  "programId": "AxQxAgndT6ziUr3FBNafhJzF4PpniGpMX4fVRXXmh5y8",
+  "signature": "3tLm9jLoF1zfYUpD4Pa9r72C2RbSRUL66SX2oDcUZY3ipvRngHjo3gzRprUsiERMVMHSBhshZgM9PrSnmy1qvueJ",
+  "alias": "mig_a653484404e48d0d",
+  "owner": "7TE8hYqduFvzhTSHp4w34Ly8rkbHX8VYxh6F7Vp5L8Ta",
+  "creatorChargeLamports": 0,
+  "treasuryPaymentLamports": 0,
+  "verifiedAt": "2026-10-10T06:34:51.736Z",
+  "disposableTest": true
+}

@@ -1,0 +1,23 @@
+{
+  "cluster": "devnet",
+  "kora_version": "2.0.3",
+  "service": "vynx-kora.service",
+  "endpoint": "http://127.0.0.1:8080",
+  "database_migration": "008_usdc_tips.sql",
+  "unauthenticated_status": 401,
+  "authenticated_status": 200,
+  "sponsor_wallet": "99yAwGm8UPQoxe6aYCdBHUVMK2cQV4UNgwRJdKnUfDJh",
+  "test_fan_wallet": "sHrXVrKQYVmrzht45hKAP8PjvapyHEVpPKqHbd9ZwTB",
+  "test_recipient_wallet": "7VZ12pi1n3hghpyjiHCbQ5GuXakWbZpEhpUA9NsLCE7t",
+  "currency": "USDC",
+  "amount": "0.01",
+  "mint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+  "signature": "bFVHXfqrspSgzUFPmC3HTHQjGHeXB6F5rbzkb1XKPmK5EQvUqaEPdWM3zJBRoH4NB1JkfogTLW1NXisZBhzZ5no",
+  "fee_payer": "99yAwGm8UPQoxe6aYCdBHUVMK2cQV4UNgwRJdKnUfDJh",
+  "network_fee_lamports": 10000,
+  "fan_pre_sol_lamports": 0,
+  "fan_post_sol_lamports": 0,
+  "sponsor_remaining_sol": 0.01849156,
+  "recorded_tip": false,
+  "note": "No published creator cards exist. Live transfer verified against a dedicated test recipient; no creator profile was created or published."
+}

@@ -7,7 +7,8 @@
     "smoke:devnet": "node scripts/devnet.cjs smoke",
     "prices:devnet": "node scripts/devnet.cjs prices",
     "deploy:devnet": "node scripts/deploy-devnet.cjs",
-    "fund:devnet": "node scripts/devnet.cjs fund"
+    "fund:devnet": "node scripts/devnet.cjs fund",
+    "smoke:migration:devnet": "node scripts/migration-smoke.cjs"
   },
   "dependencies": {
     "@solana/web3.js": "1.98.4"

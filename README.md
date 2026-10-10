@@ -101,7 +101,7 @@ Availability checks allow 30 requests per 60-second window, including invalid in
 3. Claim one available 1–30 character alias at its current on-chain SOL price. The server simulates and sponsor-signs the registry registration; the creator adds their signature. Confirmation verifies the durable intent, exact debit, and both ownership PDAs before indexing the profile. Retrying confirmation is idempotent.
 4. Open `/dashboard/card`. Your purchased alias is read-only. Profile text, small raster images, theme, social links and page links load from Supabase. Save and publish updates the public card; Save without publishing persists a private card. Local backups are optional and scoped by wallet.
 5. Share `/<alias>`; `/@<alias>` redirects there. Public cards require no wallet connection, include profile metadata and return HTTP 404 when missing or unpublished. Sponsorship offers retain their separate `/creators/<alias>` pages.
-6. A fan connects on the public card and chooses a fixed or custom tip between 0.00001 and 10 SOL. Tipping authenticates the wallet without requiring the fan to buy an alias. Transfers go to the creator's verified owner wallet. The server verifies the devnet transfer and operation memo before storing a unique confirmed tip. The dashboard displays actual verified SOL totals and recent activity.
+6. A fan opens the Tips modal and chooses USDC (the default) or SOL. USDC tips range from 0.01 to 1,000 USDC, with Kora sponsoring network fees and recipient token account creation. SOL tips retain the 0.00001–10 SOL range and wallet-paid fees. Tipping authenticates the fan without requiring an alias. The server verifies the devnet transfer, currency, exact amount, recipient and operation memo before storing a unique confirmed tip. The dashboard shows USDC and SOL totals separately. Apply migration 008 and follow [the Kora setup guide](docs/kora-usdc-tips.md) to enable USDC sponsorship; SOL continues to work before Kora is configured.
 
 Payment signatures are retained in the browser as recovery references if verification is interrupted. Retry verification rather than sending another transfer. Existing known claims can be retried without rebuilding or re-paying.
 
@@ -125,3 +125,7 @@ This feature is planned for after the alias-to-tip MVP is validated and is not i
 ## License
 
 GNU AGPLv3. See `LICENSE` when present in the distribution.
+
+### Creator image storage
+
+Before testing creator image saves, configure the `creator-images` Supabase Storage bucket using the [setup procedure](docs/creator-image-storage.md). The server accepts PNG, JPEG and WebP up to 1 MB and 6000 pixels per side, checks wallet ownership, and saves Storage URLs to the profile. Existing inline images migrate when their owner next saves. Apply [migration 007](front/supabase/migrations/007_creator_image_cleanup.sql) before deploying the cleanup-enabled save flow. No additional environment variables are needed. [Image cleanup operations](docs/creator-image-cleanup.md) cover safe replacement deletion and retry.

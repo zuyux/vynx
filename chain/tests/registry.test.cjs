@@ -384,3 +384,34 @@ test("client instruction discriminators and register argument layout match gener
     ],
   );
 });
+
+test('legacy migration requires maintenance mode and both authorities; creator pays zero', () => {
+  const f = fixture();
+  f.success(f.initialize());
+  const claimId = Buffer.alloc(16, 7);
+  const ix = (admin = f.admin) => c.migrateIx(admin.publicKey, f.owner.publicKey, 'legacy', f.svm.getClock().slot + 120n, claimId);
+  f.failed(f.send(ix(), f.admin, [f.owner]), 'MigrationRequiresPause');
+  f.success(f.send(c.adminIx('set_paused', f.admin.publicKey, Buffer.from([1])), f.admin));
+  f.failed(f.send(ix(f.stranger), f.stranger, [f.owner]), 'Unauthorized');
+  const missingOwner = ix();
+  missingOwner.keys[1].isSigner = false;
+  f.failed(f.send(missingOwner, f.admin));
+  const substituted = ix();
+  substituted.keys[3].pubkey = c.aliasPda('another');
+  f.failed(f.send(substituted, f.admin, [f.owner]), 'ConstraintSeeds');
+  const expired = c.migrateIx(f.admin.publicKey, f.owner.publicKey, 'legacy', f.svm.getClock().slot + 151n, claimId);
+  f.failed(f.send(expired, f.admin, [f.owner]), 'ExpiredQuote');
+  claimId[0] = 8; // Fresh signature after the earlier failed maintenance-mode attempt.
+  const before = f.svm.getBalance(f.owner.publicKey.toBase58());
+  const treasury = f.svm.getBalance(f.treasury.publicKey.toBase58());
+  f.success(f.send(ix(), f.admin, [f.owner]));
+  assert.equal(f.svm.getBalance(f.owner.publicKey.toBase58()), before);
+  assert.equal(f.svm.getBalance(f.treasury.publicKey.toBase58()), treasury);
+  const record = c.decodeAlias(info(f.svm, c.aliasPda('legacy')));
+  assert(record.owner.equals(f.owner.publicKey));
+  assert.equal(record.paidLamports, 0n);
+  assert.equal(record.priceVersion, 0n);
+  assert(info(f.svm, c.ownerPda(f.owner.publicKey)).data.subarray(40, 72).equals(c.aliasPda('legacy').toBuffer()));
+  f.failed(f.send(c.migrateIx(f.admin.publicKey, f.owner.publicKey, 'other', f.svm.getClock().slot + 120n, claimId), f.admin, [f.owner]), 'AlreadyClaimed');
+  f.failed(f.send(c.migrateIx(f.admin.publicKey, f.stranger.publicKey, 'legacy', f.svm.getClock().slot + 120n, claimId), f.admin, [f.stranger]), 'AlreadyClaimed');
+});

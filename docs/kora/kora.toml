@@ -1,0 +1,82 @@
+# Devnet configuration for Kora 2.0.3. Copy outside the repository before
+# adding an API key. All sponsorship keys and credentials stay server-side.
+[kora]
+rate_limit = 10
+
+[kora.auth]
+# Set this in your private copy before exposing the node.
+# api_key = "GENERATE_A_RANDOM_SECRET"
+
+[kora.cache]
+enabled = false
+default_ttl = 300
+account_ttl = 60
+
+[kora.enabled_methods]
+liveness = true
+get_payer_signer = true
+sign_transaction = true
+get_config = true
+get_blockhash = true
+get_supported_tokens = false
+estimate_transaction_fee = false
+transfer_transaction = false
+sign_and_send_transaction = false
+
+[validation]
+# Includes rent for a new USDC associated token account (~2 million lamports).
+max_allowed_lamports = 5000000
+max_signatures = 2
+price_source = "Mock"
+allow_durable_transactions = false
+allowed_programs = [
+  "11111111111111111111111111111111",
+  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+  "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+  "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
+]
+allowed_tokens = ["4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"]
+allowed_spl_paid_tokens = []
+disallowed_accounts = []
+
+# The application covers fees and recipient account rent; the fan only sends
+# the selected USDC amount. No fee-payment token instruction is added.
+[validation.price]
+type = "free"
+
+[validation.fee_payer_policy.system]
+allow_create_account = true
+allow_transfer = false
+allow_assign = false
+allow_allocate = false
+
+[validation.fee_payer_policy.spl_token]
+allow_transfer = false
+allow_burn = false
+allow_close_account = false
+allow_approve = false
+allow_revoke = false
+allow_set_authority = false
+allow_mint_to = false
+allow_initialize_mint = false
+allow_initialize_account = false
+allow_initialize_multisig = false
+allow_freeze_account = false
+allow_thaw_account = false
+
+[validation.token2022]
+blocked_mint_extensions = []
+blocked_account_extensions = []
+
+[metrics]
+enabled = false
+endpoint = "/metrics"
+port = 9090
+scrape_interval = 60
+
+[kora.usage_limit]
+# Kora 2.0.3 uses a Redis-backed lifetime limit. See the setup guide.
+enabled = true
+cache_url = "redis://127.0.0.1:6379"
+max_transactions = 20
+fallback_if_unavailable = false

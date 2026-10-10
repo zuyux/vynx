@@ -108,6 +108,72 @@ pub mod vynx_alias {
         Ok(())
     }
 
+    // Admin attests a verified legacy claim; the owner consents to this exact alias.
+    // Migration is only available during an explicitly paused maintenance window.
+    pub fn migrate_verified_claim(
+        ctx: Context<MigrateVerifiedClaim>,
+        alias: String,
+        expires_at_slot: u64,
+        claim_id: [u8; 16],
+    ) -> Result<()> {
+        validate_alias(&alias)?;
+        require!(
+            ctx.accounts.config.paused,
+            RegistryError::MigrationRequiresPause
+        );
+        validate_expiry(Clock::get()?.slot, expires_at_slot)?;
+        let alias_info = ctx.accounts.alias_record.to_account_info();
+        let owner_info = ctx.accounts.owner_index.to_account_info();
+        require_unclaimed(&alias_info)?;
+        require_unclaimed(&owner_info)?;
+        let rent = Rent::get()?;
+        let owner_key = ctx.accounts.owner.key();
+        create_record(
+            &ctx.accounts.admin,
+            &alias_info,
+            &ctx.accounts.system_program,
+            AliasRecord::SPACE,
+            rent.minimum_balance(AliasRecord::SPACE)
+                .saturating_sub(alias_info.lamports()),
+            &[b"alias", alias.as_bytes(), &[ctx.bumps.alias_record]],
+        )?;
+        create_record(
+            &ctx.accounts.admin,
+            &owner_info,
+            &ctx.accounts.system_program,
+            OwnerIndex::SPACE,
+            rent.minimum_balance(OwnerIndex::SPACE)
+                .saturating_sub(owner_info.lamports()),
+            &[b"owner", owner_key.as_ref(), &[ctx.bumps.owner_index]],
+        )?;
+        let slot = Clock::get()?.slot;
+        AliasRecord {
+            owner: owner_key,
+            alias: alias.clone(),
+            registered_at_slot: slot,
+            paid_lamports: 0,
+            price_version: 0,
+            intent_id: claim_id,
+            bump: ctx.bumps.alias_record,
+        }
+        .try_serialize(&mut &mut alias_info.try_borrow_mut_data()?[..])?;
+        OwnerIndex {
+            owner: owner_key,
+            alias_record: alias_info.key(),
+            bump: ctx.bumps.owner_index,
+        }
+        .try_serialize(&mut &mut owner_info.try_borrow_mut_data()?[..])?;
+        emit!(AliasRegistered {
+            owner: owner_key,
+            alias,
+            total_lamports: 0,
+            treasury_lamports: 0,
+            slot,
+            intent_id: claim_id,
+        });
+        Ok(())
+    }
+
     pub fn register(
         ctx: Context<Register>,
         alias: String,
@@ -251,6 +317,23 @@ pub struct Register<'info> {
     #[account(mut, seeds = [b"alias", alias.as_bytes()], bump)]
     pub alias_record: UncheckedAccount<'info>,
     /// CHECK: canonical wallet PDA; manually initialized, never reopened or closed.
+    #[account(mut, seeds = [b"owner", owner.key().as_ref()], bump)]
+    pub owner_index: UncheckedAccount<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(alias: String)]
+pub struct MigrateVerifiedClaim<'info> {
+    #[account(mut)]
+    pub admin: Signer<'info>,
+    pub owner: Signer<'info>,
+    #[account(seeds = [b"config"], bump = config.bump, has_one = admin @ RegistryError::Unauthorized)]
+    pub config: Account<'info, Config>,
+    /// CHECK: canonical unclaimed alias PDA, allocated using admin funds.
+    #[account(mut, seeds = [b"alias", alias.as_bytes()], bump)]
+    pub alias_record: UncheckedAccount<'info>,
+    /// CHECK: canonical unclaimed owner PDA, allocated using admin funds.
     #[account(mut, seeds = [b"owner", owner.key().as_ref()], bump)]
     pub owner_index: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
@@ -424,6 +507,8 @@ pub enum RegistryError {
     PriceBelowRent,
     #[msg("Arithmetic overflow.")]
     Overflow,
+    #[msg("Pause registration before migrating verified legacy claims.")]
+    MigrationRequiresPause,
 }
 
 #[cfg(test)]

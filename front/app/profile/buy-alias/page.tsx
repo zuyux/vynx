@@ -19,6 +19,9 @@ function BuyAliasContent() {
   const session = useWalletSession();
   const { solana } = useSolana();
   const claimed = useClaimedAlias(session.wallet || session.connectedWallet);
+  useEffect(() => {
+    if (claimed.alias && !claimed.error) router.replace(`/${encodeURIComponent(claimed.alias)}`);
+  }, [claimed.alias, claimed.error, router]);
   const [alias, setAlias] = useState(params.get('alias') ?? '');
   const [quote, setQuote] = useState<{ alias: string; priceSol: string; priceLamports: string; priceVersion: string; sponsored: boolean } | null>(null);
   const [quoteAttempt, setQuoteAttempt] = useState(0);

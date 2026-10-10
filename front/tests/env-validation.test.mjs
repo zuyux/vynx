@@ -15,6 +15,12 @@ const validEnvironment = {
 test("accepts a complete devnet configuration", () => {
   assert.deepEqual(validateEnvironment(validEnvironment), []);
 });
+test('Kora is optional, validates its endpoint and keeps credentials server-only', () => {
+  assert.deepEqual(validateEnvironment({ ...validEnvironment, KORA_RPC_URL: '', KORA_API_KEY: '' }), []);
+  assert.deepEqual(validateEnvironment({ ...validEnvironment, KORA_RPC_URL: 'http://127.0.0.1:8080', KORA_API_KEY: 'private-key' }), []);
+  assert.ok(validateEnvironment({ ...validEnvironment, KORA_RPC_URL: 'invalid' }).includes('KORA_RPC_URL must be a valid http(s) URL.'));
+  assert.ok(validateEnvironment({ ...validEnvironment, NEXT_PUBLIC_KORA_API_KEY: 'secret' }).some(error => error.includes('public NEXT_PUBLIC_ prefix')));
+});
 test('allows extension-only login without a Phantom Portal App ID', () => {
   const { NEXT_PUBLIC_PHANTOM_APP_ID, ...extensionEnvironment } = validEnvironment;
   assert.deepEqual(validateEnvironment(extensionEnvironment), []);

@@ -7,6 +7,6 @@ export async function POST(request: Request) {
     assertOrigin(request);
     const wallet = await requireWallet(request);
     const body = await request.json();
-    return Response.json(await confirmTip(normalizeAlias(body.alias), wallet, body.amount, body.signature), { headers: { 'Cache-Control': 'no-store' } });
+    return Response.json(await confirmTip(normalizeAlias(body.alias), wallet, body.amount, body.signature, body.currency), { headers: { 'Cache-Control': 'no-store' } });
   } catch (reason) { return apiFailure(reason); }
 }
