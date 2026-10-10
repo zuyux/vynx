@@ -4,6 +4,9 @@ import { redirect } from 'next/navigation';
 import { safeDestination } from '@/lib/alias';
 import { appDb } from '@/lib/app-db';
 import { readSession, SESSION_COOKIE } from '@/lib/wallet-session';
+import { PRIVATE_METADATA } from '@/lib/seo';
+
+export const metadata = PRIVATE_METADATA;
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const wallet = await readSession((await cookies()).get(SESSION_COOKIE)?.value ?? '');
