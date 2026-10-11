@@ -42,7 +42,7 @@ test('creator dashboards and public offers fit narrow screens', async ({ page, c
   expect(offer.error).toBeNull();
   try {
     await signIn(page, '/dashboard/card');
-    await expect(page.getByLabel('Nombre de creador')).toBeEnabled();
+    await expect(page.getByLabel("Creator name")).toBeEnabled();
     for (const path of ['/dashboard', '/dashboard/card', '/dashboard/card/preview', '/dashboard/products', '/dashboard/studio', '/dashboard/sponsorships', `/${alias}`, `/creators/${alias}`]) {
       expect((await page.goto(path))?.status()).toBe(200);
       await expect(page.getByRole('main')).toBeVisible();

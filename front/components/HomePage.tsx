@@ -1,4 +1,5 @@
 "use client";
+import { SITE_MOTTO } from '@/lib/brand';
 import { userErrorMessage, responseError } from '@/lib/user-facing-error';
 
 import Image from "next/image";
@@ -190,7 +191,7 @@ export default function HomePage({ children }: { children?: ReactNode }) {
       <section className="px-5 pb-8 sm:px-8 lg:px-12"><motion.div {...reveal} transition={{ duration: 0.6 }} className="relative mx-auto max-w-[1480px] overflow-hidden rounded-[2rem] border border-white/10 bg-linear-to-r from-[#181818] to-[#0c0c0c] px-7 py-16 text-center sm:px-12 lg:py-24"><div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_100%,rgba(255,255,255,0.04),transparent_45%)]" /><div className="relative"><p className="mb-4 text-sm font-black uppercase tracking-[0.25em] text-[#f5f5f5]">Your audience is waiting</p><h2 className="heading-font mx-auto max-w-5xl text-5xl leading-[0.9] sm:text-7xl lg:text-8xl">OWN YOUR NEXT MOVE.</h2><Button onClick={focusAlias} className="mt-9 h-14 rounded-xl bg-[#f5f5f5] px-9 text-sm font-black tracking-wide text-black motion-safe:hover:scale-105 hover:bg-neutral-200">CLAIM YOUR CARD →</Button></div></motion.div></section>
 
       {children}
-      <footer className="px-5 py-10 text-sm text-white/60 sm:px-8 lg:px-12"><div className="mx-auto flex max-w-[1480px] flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 sm:flex-row"><span>© {new Date().getFullYear()} VYNX — Your space. Your audience. Your rules.</span><a href="https://github.com/zuyux/vynx" target="_blank" rel="noopener noreferrer" className="font-bold transition-colors hover:text-[#f5f5f5]">GitHub ↗</a></div></footer>
+      <footer className="px-5 py-10 text-sm text-white/60 sm:px-8 lg:px-12"><div className="mx-auto flex max-w-[1480px] flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 sm:flex-row"><span>© {new Date().getFullYear()} VYNX — {SITE_MOTTO}</span><a href="https://github.com/zuyux/vynx" target="_blank" rel="noopener noreferrer" className="font-bold transition-colors hover:text-[#f5f5f5]">GitHub ↗</a></div></footer>
     </main>
   );
 }

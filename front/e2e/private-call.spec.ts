@@ -15,16 +15,16 @@ test('private call screen uses authenticated booking API, denies a stranger and 
   // Real wallet challenge/session, API authorization, database and page. Daily
   // network calls are covered by API mocks until account credentials are available.
   await page.goto(`/calls/${booking.data!.id}`);
-  await page.getByRole('button', { name:'Conectar wallet e iniciar sesión' }).click();
+  await page.getByRole('button', { name:"Connect wallet and sign in" }).click();
   await expect(page.getByRole('heading', { name:'Private mentorship' })).toBeVisible();
-  await expect(page.getByText('Esta llamada no se graba.', {exact:false})).toBeVisible();
+  await expect(page.getByText('This call is not recorded.', {exact:false})).toBeVisible();
   const protectedResponse = await page.request.get(`/api/calls?id=${booking.data!.id}`);
   expect(protectedResponse.status()).toBe(200);
   expect((await protectedResponse.json()).call.role).toBe('fan');
   for (const width of [320,375,430]) {
     await page.setViewportSize({width,height:800});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-    await expect(page.getByRole('button',{name:'Entrar a la llamada'})).toBeVisible();
+    await expect(page.getByRole('button',{name:"Join call"})).toBeVisible();
   }
   // An unrelated booking ID leaks neither participant identities nor the title.
   const other = await db.from('call_bookings').insert({ offer_id: offer.data!.id, creator_wallet: creator.publicKey.toBase58(), payer_wallet: Keypair.generate().publicKey.toBase58(), starts_at:new Date(Date.now()+86400000).toISOString(),ends_at:new Date(Date.now()+88200000).toISOString(),expires_at:new Date().toISOString(),terms:{title:'Hidden title'},price_units:1000000,state:'confirmed',payment_signature:`stranger-test-${Date.now()}` }).select('id').single();

@@ -15,12 +15,12 @@ export function sponsorDb() {
 }
 
 export function walletKey(value: unknown) {
-  if (typeof value !== 'string') throw new UserFacingError('Conecta una wallet de Solana.');
+  if (typeof value !== 'string') throw new UserFacingError("Connect a Solana wallet.");
   try {
     const key = new PublicKey(value);
     if (!PublicKey.isOnCurve(key.toBytes())) throw new Error();
     return key;
-  } catch { throw new UserFacingError('Dirección de wallet inválida.'); }
+  } catch { throw new UserFacingError("Invalid wallet address."); }
 }
 
 export function challengeMessage(origin: string, wallet: string, action: SponsorAction, payload: SponsorPayload, id: string, expires: string) {
@@ -29,11 +29,14 @@ export function challengeMessage(origin: string, wallet: string, action: Sponsor
   const display = action === 'save-design' ? JSON.stringify({
     alias: payload.alias, name: payload.name, bio: payload.bio, accent: payload.accent,
     theme: payload.theme, rounded: payload.rounded, links: payload.links, socials: payload.socials,
-    avatar: payload.avatar ? 'Imagen incluida en el hash' : 'Sin imagen',
-    cover: payload.cover ? 'Imagen incluida en el hash' : 'Sin imagen',
-    operation: 'Publicar diseño en tu página de Vynx',
+    avatar: payload.avatar ? "Image included in the hash" : "No image",
+    cover: payload.cover ? "Image included in the hash" : "No image",
+    operation: "Publish the design on your Vynx page",
   }) : JSON.stringify(payload);
-  return `${origin} solicita tu autorización para VYNX.\nWallet: ${wallet}\nAcción: ${action}\nDatos: ${display}\nHash: ${digest}\nNonce: ${id}\nVálido hasta: ${expires}\nEsta firma no transfiere fondos.`;
+  return `${origin} requests your authorization for VYNX.
+Wallet: ${wallet}
+Action: ${action}\nData: ${display}\nHash: ${digest}\nNonce: ${id}
+Valid until: ${expires}\nThis signature does not transfer funds.`;
 }
 
 export async function issueChallenge(origin: string, wallet: string, action: SponsorAction, payload: SponsorPayload) {
@@ -42,12 +45,12 @@ export async function issueChallenge(origin: string, wallet: string, action: Spo
   const cutoff = new Date(Date.now() - 60_000).toISOString();
   const { count, error: countError } = await db.from('sponsor_challenges').select('id', { count: 'exact', head: true }).eq('wallet', wallet).gte('created_at', cutoff);
   if (countError) throw new Error('Sponsorship storage is unavailable.');
-  if ((count ?? 0) >= 20) throw new UserFacingError('Espera un minuto antes de intentarlo nuevamente.');
+  if ((count ?? 0) >= 20) throw new UserFacingError("Wait a minute before trying again.");
   const id = randomUUID();
   const expires = new Date(Date.now() + 5 * 60_000).toISOString();
   const message = challengeMessage(origin, wallet, action, payload, id, expires);
   const { error } = await db.from('sponsor_challenges').insert({ id, wallet, message, expires_at: expires });
-  if (error) throw new UserFacingError('No se pudo preparar la autorización.');
+  if (error) throw new UserFacingError("Could not prepare authorization.");
   return { id, message };
 }
 
@@ -55,14 +58,14 @@ export async function authorize(origin: string, body: { wallet: string; action: 
   const key = walletKey(body.wallet);
   const db = sponsorDb();
   const { data, error } = await db.from('sponsor_challenges').select('*').eq('id', body.challenge).eq('wallet', body.wallet).single();
-  if (error || !data || Date.parse(data.expires_at) < Date.now()) throw new UserFacingError('La autorización expiró. Vuelve a firmar.');
-  if (data.message !== challengeMessage(origin, body.wallet, body.action, body.payload, body.challenge, new Date(data.expires_at).toISOString())) throw new UserFacingError('Los datos de la solicitud cambiaron.');
-  if (!/^[a-f0-9]{128}$/i.test(body.signature)) throw new UserFacingError('Firma inválida.');
-  if (!validWalletSignature(key, data.message, body.signature)) throw new UserFacingError('No se pudo verificar la firma de la wallet.');
+  if (error || !data || Date.parse(data.expires_at) < Date.now()) throw new UserFacingError("The authorization expired. Sign again.");
+  if (data.message !== challengeMessage(origin, body.wallet, body.action, body.payload, body.challenge, new Date(data.expires_at).toISOString())) throw new UserFacingError("The request data changed.");
+  if (!/^[a-f0-9]{128}$/i.test(body.signature)) throw new UserFacingError("Invalid signature.");
+  if (!validWalletSignature(key, data.message, body.signature)) throw new UserFacingError("Could not verify the wallet signature.");
   // Atomic delete ensures concurrent requests cannot reuse the same challenge.
   const { data: consumed, error: consumeError } = await db.from('sponsor_challenges').delete()
     .eq('id', data.id).eq('wallet', body.wallet).gt('expires_at', new Date().toISOString()).select('id');
-  if (consumeError || consumed?.length !== 1) throw new UserFacingError('Esta autorización ya se utilizó.');
+  if (consumeError || consumed?.length !== 1) throw new UserFacingError("This authorization has already been used.");
   return db;
 }
 
@@ -103,16 +106,16 @@ export async function checkout(campaign: SponsorRequest) {
 }
 
 export async function verifyPayment(campaign: SponsorRequest, signature: string) {
-  if (!/^[1-9A-HJ-NP-Za-km-z]{64,88}$/.test(signature)) throw new UserFacingError('Firma de transacción inválida.');
+  if (!/^[1-9A-HJ-NP-Za-km-z]{64,88}$/.test(signature)) throw new UserFacingError("Invalid transaction signature.");
   const connection = new Connection(DEVNET_RPC, 'finalized');
   const tx = await connection.getParsedTransaction(signature, { commitment: 'finalized', maxSupportedTransactionVersion: 0 });
-  if (!tx || !tx.meta) throw new UserFacingError('El pago todavía no está finalizado en devnet. Espera y vuelve a verificar.', 'PAYMENT_PENDING');
-  if (tx.meta.err) throw new UserFacingError('Transacción fallida.', 'PAYMENT_FAILED');
+  if (!tx || !tx.meta) throw new UserFacingError("The payment is not finalized on devnet yet. Wait and verify again.", 'PAYMENT_PENDING');
+  if (tx.meta.err) throw new UserFacingError("Transaction failed.", 'PAYMENT_FAILED');
   assertPaymentMatches(campaign, tx);
 }
 
 export function assertPaymentMatches(campaign: SponsorRequest, tx: ParsedTransactionWithMeta) {
-  if (!tx.meta || tx.meta.err) throw new UserFacingError('Transacción fallida.', 'PAYMENT_FAILED');
+  if (!tx.meta || tx.meta.err) throw new UserFacingError("Transaction failed.", 'PAYMENT_FAILED');
   const payerSigned = tx.transaction.message.accountKeys.some(k => k.signer && k.pubkey.toBase58() === campaign.brand_wallet);
   const source = tokenAccount(campaign.brand_wallet).toBase58();
   const destination = tokenAccount(campaign.creator_wallet).toBase58();
@@ -129,6 +132,6 @@ export function assertPaymentMatches(campaign: SponsorRequest, tx: ParsedTransac
   const before = tx.meta.preTokenBalances?.find(b => b.accountIndex === index)?.uiTokenAmount.amount ?? '0';
   const after = tx.meta.postTokenBalances?.find(b => b.accountIndex === index && b.mint === USDC_MINT.toBase58() && b.owner === campaign.creator_wallet)?.uiTokenAmount.amount;
   if (!payerSigned || !memo || !transfer || !after || BigInt(after) - BigInt(before) < BigInt(amount)) {
-    throw new UserFacingError('El pago no coincide con esta campaña, moneda, importe o destinatario.', 'PAYMENT_MISMATCH');
+    throw new UserFacingError("The payment does not match this campaign, currency, amount, or recipient.", 'PAYMENT_MISMATCH');
   }
 }

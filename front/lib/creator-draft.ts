@@ -37,7 +37,7 @@ export function readDraft(raw: string | null): CreatorDraft {
       !value.links.every((link: CreatorLink) => link && bounded(link.id, 60) && bounded(link.title, 60) && bounded(link.url, 500)) ||
       new Set(value.links.map((link: CreatorLink) => link.id)).size !== value.links.length ||
       !value.socials || !['instagram', 'youtube', 'x'].every(key => bounded(value.socials[key], 500))) {
-    throw new UserFacingError('El borrador guardado no es compatible. Puedes crear uno nuevo.');
+    throw new UserFacingError("The saved draft is incompatible. You can create a new one.");
   }
   // Return only supported fields; never persist arbitrary client properties.
   return { version: 1, alias: value.alias, name: value.name, bio: value.bio,
@@ -57,14 +57,14 @@ export function publicationFields(value: unknown): CreatorDraft {
 export function draftFromProfile(profile: { alias: string; display_name: string; bio: string; website?: string; design?: unknown }): CreatorDraft {
   const draft = profile.design ? readDraft(JSON.stringify(profile.design)) : structuredClone(EMPTY_DRAFT);
   if (!profile.design && profile.website && safeLink(profile.website)) {
-    draft.links = [{ id: 'website', title: 'Mi sitio y mis proyectos', url: safeLink(profile.website)! }];
+    draft.links = [{ id: 'website', title: 'My website and projects', url: safeLink(profile.website)! }];
   }
   return { ...draft, alias: profile.alias, name: profile.display_name, bio: profile.bio };
 }
 export function validateDraft(draft: CreatorDraft): string | null {
-  if (!/^[a-z0-9_]{1,30}$/.test(draft.alias)) return 'El alias debe tener entre 1 y 30 letras, números o guiones bajos.';
-  if (!draft.name.trim()) return 'Agrega tu nombre de creador.';
-  if (draft.links.some(link => !link.title.trim() || !safeLink(link.url))) return 'Completa el título y un enlace HTTPS válido en cada enlace.';
-  if (Object.values(draft.socials).some(url => url && !safeLink(url))) return 'Usa enlaces HTTPS válidos en tus redes sociales.';
+  if (!/^[a-z0-9_]{1,30}$/.test(draft.alias)) return "The alias must contain 1 to 30 letters, numbers, or underscores.";
+  if (!draft.name.trim()) return "Add your creator name.";
+  if (draft.links.some(link => !link.title.trim() || !safeLink(link.url))) return "Add a title and a valid HTTPS URL for each link.";
+  if (Object.values(draft.socials).some(url => url && !safeLink(url))) return "Use valid HTTPS links for your social profiles.";
   return null;
 }

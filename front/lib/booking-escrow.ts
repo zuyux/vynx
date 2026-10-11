@@ -15,7 +15,7 @@ export function escrowProgram() {
   // The hackathon explicitly permits this unaudited program on devnet. A hosted
   // demo requires its own opt-in; escrowContext still verifies the devnet genesis.
   if ((process.env.NODE_ENV === 'production' && process.env.VYNX_BOOKING_HACKATHON !== 'true') || process.env.VYNX_BOOKING_ESCROW_ENABLED !== 'true' || !process.env.VYNX_BOOKING_PROGRAM_ID) {
-    throw new ApiError('Las reservas con escrow todavía no están habilitadas.', 503, 'BOOKING_DISABLED');
+    throw new ApiError("Escrow bookings are not enabled yet.", 503, 'BOOKING_DISABLED');
   }
   return new PublicKey(process.env.VYNX_BOOKING_PROGRAM_ID);
 }
@@ -33,7 +33,7 @@ export function assertEscrowReceipt(info: AccountInfo<Buffer>, program: PublicKe
     || new PublicKey(d.subarray(120, 152)).toBase58() !== DEVNET_USDC_MINT || (resolver && !new PublicKey(d.subarray(152, 184)).equals(resolver))
     || d.readBigUInt64LE(184) !== BigInt(b.price_units) || d.readBigInt64LE(192) !== BigInt(Date.parse(b.starts_at) / 1000)
     || d.readBigInt64LE(200) !== BigInt(Date.parse(b.ends_at) / 1000) || d.readBigInt64LE(208) > BigInt(Date.parse(b.expires_at) / 1000)
-    || ![1, 2, 3].includes(d[216])) throw new ApiError('El recibo de escrow no coincide con esta reserva.', 409, 'PAYMENT_MISMATCH');
+    || ![1, 2, 3].includes(d[216])) throw new ApiError("The escrow receipt does not match this booking.", 409, 'PAYMENT_MISMATCH');
 }
 export async function escrowContext() {
   const program = escrowProgram();
@@ -41,15 +41,15 @@ export async function escrowContext() {
   const config = bookingAddresses(program, '00000000-0000-0000-0000-000000000000').config;
   const [info, executable] = await Promise.all([connection.getAccountInfo(config, 'finalized'), connection.getAccountInfo(program, 'finalized')]);
   if (!executable?.executable || !info?.owner.equals(program) || info.data.length !== 105 || !info.data.subarray(0, 8).equals(discriminator('account', 'Config'))
-    || new PublicKey(info.data.subarray(72, 104)).toBase58() !== DEVNET_USDC_MINT) throw new ApiError('El escrow no está configurado para USDC devnet.', 503);
+    || new PublicKey(info.data.subarray(72, 104)).toBase58() !== DEVNET_USDC_MINT) throw new ApiError("Escrow is not configured for devnet USDC.", 503);
   return { program, connection, quoteAuthority: new PublicKey(info.data.subarray(8, 40)), resolver: new PublicKey(info.data.subarray(40, 72)) };
 }
 export async function buildBookingPayment(b: CallBooking) {
   const { program, connection, quoteAuthority } = await escrowContext();
   const raw = process.env.VYNX_BOOKING_QUOTE_SECRET;
-  if (!raw) throw new ApiError('Falta la autoridad de reservas del servidor.', 503);
+  if (!raw) throw new ApiError("The server booking authority is missing.", 503);
   const signer = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(raw)));
-  if (!signer.publicKey.equals(quoteAuthority)) throw new ApiError('La autoridad de reservas no coincide con el escrow.', 503);
+  if (!signer.publicKey.equals(quoteAuthority)) throw new ApiError("The booking authority does not match the escrow.", 503);
   const { booking, vault, config } = bookingAddresses(program, b.id);
   const payer = new PublicKey(b.payer_wallet), mint = new PublicKey(DEVNET_USDC_MINT);
   const data = Buffer.alloc(88);
@@ -68,15 +68,15 @@ export async function buildBookingPayment(b: CallBooking) {
   return { transaction: tx.serialize({ requireAllSignatures: false }).toString('base64'), height: latest.lastValidBlockHeight };
 }
 export async function verifyBookingPayment(b: CallBooking, signature: string) {
-  if (!/^[1-9A-HJ-NP-Za-km-z]{64,88}$/.test(signature) || !b.transaction) throw new ApiError('Firma de pago inválida.');
+  if (!/^[1-9A-HJ-NP-Za-km-z]{64,88}$/.test(signature) || !b.transaction) throw new ApiError("Invalid payment signature.");
   const { program, connection, resolver } = await escrowContext();
   const [tx, receipt] = await Promise.all([
     connection.getTransaction(signature, { commitment: 'finalized', maxSupportedTransactionVersion: 0 }),
     connection.getAccountInfo(bookingAddresses(program, b.id).booking, 'finalized'),
   ]);
-  if (!tx?.meta) throw new ApiError('El pago todavía no está finalizado. Reintenta la verificación.', 409, 'PAYMENT_PENDING');
-  if (tx.meta.err) throw new ApiError('El pago falló en devnet.', 400, 'PAYMENT_FAILED');
+  if (!tx?.meta) throw new ApiError("The payment is not finalized yet. Retry verification.", 409, 'PAYMENT_PENDING');
+  if (tx.meta.err) throw new ApiError("The payment failed on devnet.", 400, 'PAYMENT_FAILED');
   const original = Transaction.from(Buffer.from(b.transaction, 'base64'));
-  if (!Buffer.from(tx.transaction.message.serialize()).equals(original.serializeMessage()) || !receipt) throw new ApiError('La transacción no coincide con esta reserva.', 409, 'PAYMENT_MISMATCH');
+  if (!Buffer.from(tx.transaction.message.serialize()).equals(original.serializeMessage()) || !receipt) throw new ApiError("The transaction does not match this booking.", 409, 'PAYMENT_MISMATCH');
   assertEscrowReceipt(receipt, program, b, resolver);
 }

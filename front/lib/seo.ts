@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
+import { SITE_MOTTO } from './brand';
 import type { PublicCreator } from './public-creator';
 import { safeLink } from './creator-draft';
 
 export const SITE_NAME = 'VYNX';
-export const SITE_TITLE = 'VYNX – Creator Cards, Links & Solana Tips';
-export const SITE_DESCRIPTION = 'Create your VYNX creator card with a unique alias, share your links, and receive support from your audience in SOL or USDC on Solana.';
+export const SITE_TITLE = `VYNX – ${SITE_MOTTO}`;
+export const SITE_DESCRIPTION = `${SITE_MOTTO}. Create your VYNX creator card with a unique alias, share your links, and receive support from your audience in SOL or USDC on Solana.`;
 
 export function siteUrl(path = '/') {
   return new URL(path, process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').href;

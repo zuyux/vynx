@@ -34,7 +34,7 @@ test('missing leaves/joins, unknown participants and contradictory timing remain
 test('normalize only supported events and exclude names, wallets and recording secrets', async () => {
  const body={version:'1.0.0',type:'participant.joined',id:'event',event_ts:1,payload:{room:'r',session_id:'s',user_id:'u',joined_at:1,user_name:'PRIVATE',share_token:'SECRET'}};
  assert.deepEqual(normalizedEvent(body).payload,{room:'r',user_id:'u',session_id:'s',joined_at:1});assert.equal(normalizedEvent({...body,type:'recording.ready-to-download'}),null);assert.throws(()=>normalizedEvent({...body,version:'2.0.0'}));
- await assert.rejects(boundedJSON(new Request('https://test',{method:'POST',body:'x'.repeat(101)}),100),/grande/);
+ await assert.rejects(boundedJSON(new Request('https://test',{method:'POST',body:'x'.repeat(101)}),100),/large/);
 });
 
 test('Daily join and leave timestamps may differ by milliseconds; larger discrepancies stay incomplete', () => {

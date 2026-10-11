@@ -1,5 +1,5 @@
 import { LoadingState } from '@/components/LoadingState';
 
 export default function Loading() {
-  return <main id="main-content" tabIndex={-1} className="min-h-screen bg-[#07070a] py-8 text-white"><LoadingState label="Cargando tu panel…" /></main>;
+  return <main id="main-content" tabIndex={-1} className="min-h-screen bg-[#07070a] py-8 text-white"><LoadingState label="Loading your dashboard…" /></main>;
 }

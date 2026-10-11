@@ -32,8 +32,8 @@ test('publication authorization binds images without putting image bytes in the 
   const message = challengeMessage(...args,first,'nonce','expiry');
   assert.notEqual(message,challengeMessage(...args,second,'nonce','expiry'));
   assert.equal(message.includes(first.avatar),false);
-  assert.match(message,/Publicar diseño/);
-  assert.match(message,/Esta firma no transfiere fondos/);
+  assert.match(message,/Publish the design/);
+  assert.match(message,/This signature does not transfer funds/);
 });
 
 test('publication enforces the server image size limit', () => {

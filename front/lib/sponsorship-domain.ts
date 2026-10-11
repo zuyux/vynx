@@ -15,7 +15,7 @@ export type SponsorPayload = Record<string, unknown>;
 
 export function text(value: unknown, max: number, required = true): string {
   if (typeof value !== 'string' || value.trim().length > max || (required && !value.trim())) {
-    throw new UserFacingError('Revisa los campos obligatorios y su longitud.');
+    throw new UserFacingError("Review the required fields and their length limits.");
   }
   return value.trim();
 }
@@ -27,17 +27,17 @@ export function httpsUrl(value: unknown, required = true): string {
     const url = new URL(input);
     if (url.protocol !== 'https:' || url.username || url.password) throw new Error();
     return url.href;
-  } catch { throw new UserFacingError('Usa un enlace HTTPS válido, sin credenciales.'); }
+  } catch { throw new UserFacingError("Use a valid HTTPS link without credentials."); }
 }
 
 export function profileFields(data: SponsorPayload) {
   const alias = text(data.alias, 30).toLowerCase();
-  if (!/^[a-z0-9_]{1,30}$/.test(alias)) throw new UserFacingError('El alias requiere 1–30 letras, números o guiones bajos.');
+  if (!/^[a-z0-9_]{1,30}$/.test(alias)) throw new UserFacingError("The alias requires 1–30 letters, numbers, or underscores.");
   const price = Number(data.price_cents);
   const days = Number(data.duration_days);
-  if (!Number.isSafeInteger(price) || price < 100 || price > 1000000) throw new UserFacingError('El precio debe estar entre 1 y 10.000 USDC.');
-  if (![7, 14, 30].includes(days)) throw new UserFacingError('Selecciona 7, 14 o 30 días.');
-  if (typeof data.accepting !== 'boolean') throw new UserFacingError('Estado de oferta inválido.');
+  if (!Number.isSafeInteger(price) || price < 100 || price > 1000000) throw new UserFacingError("The price must be between 1 and 10,000 USDC.");
+  if (![7, 14, 30].includes(days)) throw new UserFacingError("Choose 7, 14, or 30 days.");
+  if (typeof data.accepting !== 'boolean') throw new UserFacingError("Invalid offer status.");
   return { alias, display_name: text(data.display_name, 60), bio: text(data.bio, 280, false),
     website: httpsUrl(data.website, false), price_cents: price, duration_days: days, accepting: data.accepting };
 }
@@ -57,5 +57,5 @@ export function canReview(campaign: Pick<SponsorRequest, 'status' | 'creator_wal
 }
 
 export function money(cents: number) {
-  return (cents / 100).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }

@@ -15,12 +15,12 @@ test('campaign leaves the active filter at the exact expiry time', () => {
 });
 test('next action distinguishes review, waiting and payment recovery', () => {
   const pending = {...campaign,status:'pending'};
-  assert.match(nextCampaignAction(pending, 'creator'), /Revisa el anuncio/);
-  assert.match(nextCampaignAction(pending, 'brand'), /Todavía no debes pagar/);
+  assert.match(nextCampaignAction(pending, 'creator'), /Review the ad/);
+  assert.match(nextCampaignAction(pending, 'brand'), /Do not pay yet/);
   const approved = {...campaign,status:'approved'};
-  assert.match(nextCampaignAction(approved, 'creator'), /La marca debe pagar/);
-  assert.match(nextCampaignAction(approved, 'brand'), /Paga para iniciar/);
-  assert.match(nextCampaignAction(approved, 'brand', true), /sin pagar de nuevo/);
-  assert.match(nextCampaignAction({...campaign,status:'rejected'}, 'brand'), /No debes realizar un pago/);
-  assert.match(nextCampaignAction(campaign, 'brand', false, Date.parse(campaign.ends_at)), /terminó/);
+  assert.match(nextCampaignAction(approved, 'creator'), /The brand must pay/);
+  assert.match(nextCampaignAction(approved, 'brand'), /Pay to start/);
+  assert.match(nextCampaignAction(approved, 'brand', true), /without paying again/);
+  assert.match(nextCampaignAction({...campaign,status:'rejected'}, 'brand'), /Do not make a payment/);
+  assert.match(nextCampaignAction(campaign, 'brand', false, Date.parse(campaign.ends_at)), /has ended/);
 });

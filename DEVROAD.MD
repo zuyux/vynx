@@ -184,6 +184,8 @@ Goal: replace the dashboard mock with creator-owned data.
 - [x] **P1** Remove replaced images to avoid orphaned storage objects. Atomic cleanup queue, reference guards, safe deletion/retry, interrupted-upload recovery and older-object discovery are implemented. Migration 007 is active; hosted preview verified replacement/removal deletion and preservation of the new image. Older-object discovery found no untracked candidates. See [cleanup procedure](docs/creator-image-cleanup.md).
 - [x] **P1** Make the dashboard and editor usable on mobile; replace the fixed-width sidebar with responsive navigation.
 - [x] **P1** Add unsaved-changes protection.
+- [x] **P1** Use shadcn controls for card setup: keyboard-accessible tabs, inputs, switches and reset confirmation; integrate locally fetched Iconsax social and editor icons and inline HTTPS guidance.
+- [x] **P1** Standardize site copy in English, including dashboards, sponsorships, bookings, calls, product demos, wallet prompts, accessibility labels and server errors. Format dates in English while preserving time zones and creator-entered content.
 
 Acceptance criteria:
 
@@ -317,7 +319,7 @@ Build order:
 
 - [ ] **P2 / Demo 1** Add demo-only booking persistence and slot reservation for one offer. Snapshot accepted terms and timezone, store scheduled instants in UTC, enforce creator slot conflicts atomically, and make reservation retries idempotent.
 - [ ] **P2 / Demo 2** Add an explicitly simulated payment/escrow adapter that confirms a demo booking, holds its balance during disputes, and applies one final allocation. Isolate demo records and disable these routes in production; changing a client flag cannot enable demo mode.
-- [ ] **P2 / Demo 3** Integrate Daily room creation, authorized participant join tokens and Prebuilt UI. Enforce booking ownership, room-bound expiring access, recording consent, and server-controlled recording; keep Daily credentials server-side. A shared room URL cannot bypass participant authorization.
+- [ ] **P2 / Demo 3** Integrate Daily room creation, authorized participant join tokens and Prebuilt UI. Enforce booking ownership, room-bound expiring access, both participants’ recording and AI-analysis consent before funding, and server-controlled recording; keep Daily credentials server-side. A shared room URL cannot bypass participant authorization.
 - [ ] **P2 / Demo 4** Authenticate Daily webhooks, persist unique event IDs, reconcile reconnects and capture original recordings into private storage. Show simultaneous attendance, recording coverage and evidence gaps. Missing media produces a hold, not an invented verdict.
 - [ ] **P2 / Demo 5** Implement a minimal asynchronous evidence-analysis worker: transcript plus relevant video/screenshare evidence, versioned rubric, structured findings, valid timestamp references, and an initial release/refund/inconclusive decision. Start with one objectively defined service and full release/refund outcomes; defer partial awards unless the rubric explicitly supports them.
 - [ ] **P2 / Demo 6** Add participant dispute and appeal screens. Show the initial decision, evidence, simulated fee quote and deadline; appeal freezes finalization immediately. Add a privileged human reviewer view to uphold/overturn with a reason, then execute one simulated settlement. Reviewer access must be independent of creator/fan ownership.

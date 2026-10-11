@@ -47,7 +47,6 @@ front/pnpm-lock.yaml
 front/next-env.d.ts
 front/*.tsbuildinfo
 front/.eslintcache
-front/components.json
 
 # -- Rust / Cargo / Anchor ----------------------------------------------------
 chain/node_modules/

@@ -13,13 +13,13 @@ export default function BookedCalls() {
     const controller = new AbortController();
     fetch('/api/calls', { cache: 'no-store', signal: controller.signal }).then(async response => {
       const result = await response.json();
-      if (!response.ok) throw responseError(response, result, 'No se pudieron cargar tus llamadas.');
+      if (!response.ok) throw responseError(response, result, "Could not load your calls.");
       if (!controller.signal.aborted) setSnapshot({ wallet, calls: result.calls, error: '' });
-    }).catch(reason => { if (!controller.signal.aborted) setSnapshot({ wallet, calls: [], error: userErrorMessage(reason, 'No se pudieron cargar tus llamadas.') }); });
+    }).catch(reason => { if (!controller.signal.aborted) setSnapshot({ wallet, calls: [], error: userErrorMessage(reason, "Could not load your calls.") }); });
     return () => controller.abort();
   }, [wallet]);
   const loaded = snapshot?.wallet === wallet ? snapshot : null;
-  return <section className="mt-8 rounded-2xl border border-white/15 p-5" aria-labelledby="booked-calls"><h2 id="booked-calls" className="text-xl font-semibold">Mis llamadas reservadas</h2>
-    {!loaded ? <p className="mt-3">Cargando llamadas…</p> : loaded.error ? <p role="alert" className="mt-3 text-red-300">{loaded.error}</p> : !loaded.calls.length ? <p className="mt-3 text-zinc-400">Todavía no tienes llamadas confirmadas.</p> : <ul className="mt-4 space-y-4">{loaded.calls.map(call => <li key={call.id}><Link href={call.call_path} className="block rounded-xl border border-violet-400/30 p-4 text-violet-200 underline">{call.title} · {new Date(call.starts_at).toLocaleString()} · {call.role === 'creator' ? 'Creador' : 'Fan'} — Abrir llamada privada</Link></li>)}</ul>}
+  return <section className="mt-8 rounded-2xl border border-white/15 p-5" aria-labelledby="booked-calls"><h2 id="booked-calls" className="text-xl font-semibold">My booked calls</h2>
+    {!loaded ? <p className="mt-3">Loading calls…</p> : loaded.error ? <p role="alert" className="mt-3 text-red-300">{loaded.error}</p> : !loaded.calls.length ? <p className="mt-3 text-zinc-400">You have no confirmed calls yet.</p> : <ul className="mt-4 space-y-4">{loaded.calls.map(call => <li key={call.id}><Link href={call.call_path} className="block rounded-xl border border-violet-400/30 p-4 text-violet-200 underline">{call.title} · {new Date(call.starts_at).toLocaleString('en-US')} · {call.role === 'creator' ? 'Creator' : 'Fan'} — Open private call</Link></li>)}</ul>}
   </section>;
 }

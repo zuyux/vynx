@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { test, expect } from './test';
 import { createClient } from '@supabase/supabase-js';
 import { Keypair, PublicKey, Transaction, SystemProgram, TransactionInstruction } from '@solana/web3.js';
@@ -48,27 +49,27 @@ test('creator claims, publishes, reloads, receives a verified tip and logs out',
   for (const width of [320, 375, 430]) {
     await creatorPage.setViewportSize({ width, height: 844 });
     expect(await creatorPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    for (const name of ['Guardar y publicar', 'Guardar borrador local', 'Recargar mi perfil guardado', 'Guardar sin publicar', 'Desconectar']) {
+    for (const name of ["Save and publish", "Save local draft", "Reload my saved profile", "Save without publishing", "Disconnect"]) {
       const action = creatorPage.getByRole('button', { name, exact: true });
       expect(await action.evaluate(element => Math.abs(element.getBoundingClientRect().width - element.parentElement!.getBoundingClientRect().width) < 2), `${name} fills its action group at ${width}px`).toBe(true);
       expect((await action.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     }
-    await creatorPage.getByRole('button', { name: 'Ofertas', exact: true }).click();
+    await creatorPage.getByRole('tab', { name: "Offers", exact: true }).click();
     expect(await creatorPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    await creatorPage.getByRole('button', { name: 'Perfil', exact: true }).click();
+    await creatorPage.getByRole('tab', { name: "Profile", exact: true }).click();
   }
   await creatorPage.setViewportSize({ width: 1280, height: 900 });
-  await creatorPage.getByLabel('Nombre de creador').fill('E2E creator');
-  await creatorPage.getByLabel('Presentación').fill('My saved creator story');
-  await creatorPage.getByRole('button', { name: 'Enlaces', exact: true }).click();
-  await creatorPage.getByRole('button', { name: /Agregar enlace/ }).click();
-  await creatorPage.getByLabel('Título del enlace 1').fill('My project');
-  await creatorPage.getByLabel('URL del enlace 1').fill('https://example.com/project');
-  await creatorPage.getByRole('button', { name: 'Guardar y publicar', exact: true }).click();
-  await expect(creatorPage.getByRole('status').filter({ hasText: /Diseño publicado/ })).toBeVisible();
+  await creatorPage.getByLabel("Creator name").fill('E2E creator');
+  await creatorPage.getByLabel("Introduction").fill('My saved creator story');
+  await creatorPage.getByRole('tab', { name: "Links", exact: true }).click();
+  await creatorPage.getByRole('button', { name: /Add link/ }).click();
+  await creatorPage.getByLabel('Link title 1').fill('My project');
+  await creatorPage.getByLabel('Link URL 1').fill('https://example.com/project');
+  await creatorPage.getByRole('button', { name: "Save and publish", exact: true }).click();
+  await expect(creatorPage.getByRole('status').filter({ hasText: /Design published/ })).toBeVisible();
   await creatorPage.reload();
-  await expect(creatorPage.getByLabel('Nombre de creador')).toHaveValue('E2E creator');
-  await expect(creatorPage.getByLabel('Presentación')).toHaveValue('My saved creator story');
+  await expect(creatorPage.getByLabel("Creator name")).toHaveValue('E2E creator');
+  await expect(creatorPage.getByLabel("Introduction")).toHaveValue('My saved creator story');
   const saved = await db().from('cards_users').select('*').eq('wallet_address', owner.publicKey.toBase58()).single();
   expect(saved.error).toBeNull(); expect(saved.data.published).toBe(true); expect(saved.data.design.links[0].title).toBe('My project');
   await creatorPage.goto('/');
@@ -136,7 +137,7 @@ test('creator claims, publishes, reloads, receives a verified tip and logs out',
   await expect(creatorPage.getByTestId('tip-total-sol')).toHaveText('0.01 SOL');
   await expect(creatorPage.getByTestId('tip-total')).toHaveText('1 USDC');
   await expect(creatorPage.getByTestId('tip-count')).toHaveText('2');
-  await creatorPage.getByRole('button', { name: 'Desconectar', exact: true }).click();
+  await creatorPage.getByRole('button', { name: "Disconnect", exact: true }).click();
   await expect(creatorPage).toHaveURL('/');
   expect((await creatorContext.cookies()).some(cookie => cookie.name === 'vynx-session')).toBe(false);
   const revoked = await creatorPage.request.get('/api/dashboard', { headers: { cookie: `vynx-session=${sessionCookie.value}` } }); expect(revoked.status()).toBe(401);
@@ -195,18 +196,35 @@ test('profile images, socials and theme persist; unpublished pages stay private'
   const page = await context.newPage();
   await signIn(page, '/dashboard/card');
   await expect(page).toHaveURL(/dashboard\/card/);
-  await expect(page.getByLabel('Nombre de creador')).toBeEnabled();
-  await page.getByLabel('Nombre de creador').fill('Mobile creator');
-  await page.getByLabel('Subir foto de perfil').setInputFiles('public/favicon-16x16.png');
-  await expect(page.getByAltText('Foto de perfil seleccionada')).toBeVisible();
-  await expect(page.getByLabel('Subir portada')).toHaveCount(0);
-  await page.getByLabel('Recibir propinas en USDC y SOL').uncheck();
-  await page.getByRole('button', { name: 'Apariencia', exact: true }).click();
-  await page.getByLabel('Claro', { exact: true }).check();
-  await page.getByRole('button', { name: 'Redes', exact: true }).click();
+  await expect(page.getByLabel("Creator name")).toBeEnabled();
+  await page.getByRole('tab', { name: "Profile", exact: true }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('tab', { name: "Appearance", exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: "Profile", exact: true }).click();
+  const privacy = page.getByRole('switch', { name: "Show tip sender addresses in my activity", exact: true });
+  await privacy.check();
+  await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
+  await expect(privacy).not.toBeChecked();
+  await page.getByRole('button', { name: 'Start over', exact: true }).click();
+  await expect(page.getByRole('alertdialog')).toBeVisible();
+  await page.getByRole('button', { name: "Cancel", exact: true }).click();
+  await expect(page.getByRole('alertdialog')).toBeHidden();
+  await page.getByLabel("Creator name").fill('Mobile creator');
+  await page.getByLabel("Upload profile photo").setInputFiles('public/favicon-16x16.png');
+  await expect(page.getByAltText("Selected profile photo")).toBeVisible();
+  await expect(page.getByLabel("Upload cover")).toHaveCount(0);
+  await page.getByLabel("Receive tips in USDC and SOL").uncheck();
+  await page.getByRole('tab', { name: "Appearance", exact: true }).click();
+  await page.getByLabel("Light", { exact: true }).check();
+  await page.getByRole('tab', { name: "Socials", exact: true }).click();
+  await page.getByLabel('YouTube', { exact: true }).fill('http://youtube.com/unsafe');
+  await expect(page.getByLabel('YouTube', { exact: true })).toHaveAttribute('aria-invalid', 'true');
   await page.getByLabel('YouTube', { exact: true }).fill('https://youtube.com/@mobilecreator');
-  await page.getByRole('button', { name: 'Guardar y publicar', exact: true }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'Diseño publicado' })).toBeVisible();
+  expect((await new AxeBuilder({ page }).include('[data-slot="tabs"]').withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath('card-editor-mobile.png'), fullPage: true });
+  await expect(page.getByLabel('YouTube', { exact: true })).toHaveAttribute('aria-invalid', 'false');
+  await page.getByRole('button', { name: "Save and publish", exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Design published' })).toBeVisible();
   const saved = await db().from('cards_users').select('design,tips_enabled').eq('username', alias).single();
   expect(saved.data!.design.theme).toBe('light'); expect(saved.data!.tips_enabled).toBe(false);
   expect(saved.data!.design.avatar).toContain(`/storage/v1/object/public/creator-images/${owner.publicKey.toBase58()}/`);
@@ -272,8 +290,8 @@ test('profile images, socials and theme persist; unpublished pages stay private'
   await expect(publicPage.getByRole('heading', { name: 'Updated portrait creator' })).toBeVisible();
   await page.goto('/dashboard/card');
 
-  await page.getByRole('button', { name: 'Guardar sin publicar', exact: true }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'Tu página pública está oculta' })).toBeVisible();
+  await page.getByRole('button', { name: "Save without publishing", exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Your public page is hidden' })).toBeVisible();
   const hidden = await publicPage.request.get(`/${alias}`); expect([200, 404]).toContain(hidden.status()); expect(await hidden.text()).toContain('Card unavailable');
   const exposed = await publicPage.request.get(`/api/profile?wallet=${owner.publicKey.toBase58()}`);
   expect(Object.keys((await exposed.json()).profile).sort()).toEqual(['username','wallet_address']);

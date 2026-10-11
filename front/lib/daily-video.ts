@@ -8,12 +8,12 @@ export const callWindow = (start: string, end: string) => ({ nbf: Math.floor(Dat
 
 export async function dailyRequest(path: string, body?: unknown) {
   const key = process.env.DAILY_API_KEY;
-  if (!key) throw new ApiError('Las videollamadas todavía no están configuradas.', 503, 'VIDEO_UNAVAILABLE');
+  if (!key) throw new ApiError("Video calls are not configured yet.", 503, 'VIDEO_UNAVAILABLE');
   const response = await fetch(`https://api.daily.co/v1/${path}`, {
     method: body === undefined ? 'GET' : 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }), cache: 'no-store', signal: AbortSignal.timeout(12_000),
   });
-  if (!response.ok) throw new ApiError('No se pudo contactar al proveedor de video.', 503, 'VIDEO_UNAVAILABLE');
+  if (!response.ok) throw new ApiError('Could not contact the video provider.', 503, 'VIDEO_UNAVAILABLE');
   return await response.json();
 }
 export function roomProperties(start: string, end: string) {
@@ -25,58 +25,58 @@ export function assertPrivateRoom(room: Record<string, unknown>, name: string, s
   const config = room.config as Record<string, unknown> | undefined;
   const window = callWindow(start, end);
   let url: URL;
-  try { url = new URL(String(room.url)); } catch { throw new ApiError('Sala de video inválida.', 503); }
+  try { url = new URL(String(room.url)); } catch { throw new ApiError("Invalid video room.", 503); }
   if (room.name !== name || room.privacy !== 'private' || !config || config.max_participants !== 2
     || config.enforce_unique_user_ids !== true || config.enable_knocking !== false || config.eject_at_room_exp !== true
     || config.nbf !== window.nbf || config.exp !== window.exp || (config.enable_recording != null && config.enable_recording !== false)
     || url.protocol !== 'https:' || !url.hostname.endsWith('.daily.co') || url.pathname.replace(/\/$/, '') !== `/${name}` || url.search || url.hash) {
-    throw new ApiError('La sala no cumple las restricciones de la reserva.', 503);
+    throw new ApiError("The room does not meet the booking restrictions.", 503);
   }
   return url.toString();
 }
 export function tokenProperties(room: VideoRoom, role: 'creator' | 'fan', start: string, end: string) {
   return { room_name: room.room_name, ...callWindow(start, end), user_id: role === 'creator' ? room.creator_user_id : room.fan_user_id,
-    user_name: role === 'creator' ? 'Creador' : 'Fan', is_owner: false, eject_at_token_exp: true,
+    user_name: role === 'creator' ? 'Creator' : 'Fan', is_owner: false, eject_at_token_exp: true,
     enable_recording_ui: false, start_cloud_recording: false,
     permissions: { hasPresence: true, canSend: true, canReceive: { base: true }, canAdmin: false } };
 }
 export async function boundedJSON(request: Request, max = 16_384): Promise<Record<string, unknown>> {
   const reader = request.body?.getReader();
-  if (!reader) throw new ApiError('Faltan los datos.');
+  if (!reader) throw new ApiError("Missing data.");
   const chunks: Uint8Array[] = []; let size = 0;
   try {
     while (true) {
       const { done, value } = await reader.read(); if (done) break;
-      size += value.byteLength; if (size > max) { await reader.cancel(); throw new ApiError('Solicitud demasiado grande.', 413); }
+      size += value.byteLength; if (size > max) { await reader.cancel(); throw new ApiError('Request too large.', 413); }
       chunks.push(value);
     }
     const result = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-    if (!result || typeof result !== 'object' || Array.isArray(result)) throw new ApiError('Solicitud inválida.');
+    if (!result || typeof result !== 'object' || Array.isArray(result)) throw new ApiError("Invalid request.");
     return result;
   } finally { reader.releaseLock(); }
 }
 export function verifyDailyWebhook(headers: Headers, body: Record<string, unknown>, now = Date.now()) {
   const secret = process.env.DAILY_WEBHOOK_HMAC_BASE64;
-  if (!secret || !/^[A-Za-z0-9+/]+={0,2}$/.test(secret) || Buffer.from(secret, 'base64').length < 32) throw new ApiError('Webhook no configurado.', 503);
+  if (!secret || !/^[A-Za-z0-9+/]+={0,2}$/.test(secret) || Buffer.from(secret, 'base64').length < 32) throw new ApiError('Webhook is not configured.', 503);
   const timestamp = headers.get('x-webhook-timestamp') ?? '';
   const signature = headers.get('x-webhook-signature') ?? '';
   // Daily signs the timestamp header and the JSON-serialized event, with a base64 secret.
-  if (!/^\d+(\.\d+)?$/.test(timestamp) || Math.abs(now / 1000 - (Number(timestamp) > 1e12 ? Number(timestamp) / 1000 : Number(timestamp))) > 300) throw new ApiError('Webhook expirado.', 401);
+  if (!/^\d+(\.\d+)?$/.test(timestamp) || Math.abs(now / 1000 - (Number(timestamp) > 1e12 ? Number(timestamp) / 1000 : Number(timestamp))) > 300) throw new ApiError('Webhook expired.', 401);
   const expected = createHmac('sha256', Buffer.from(secret, 'base64')).update(`${timestamp}.${JSON.stringify(body)}`).digest('base64');
   const received = Buffer.from(signature), calculated = Buffer.from(expected);
-  if (received.length !== calculated.length || !timingSafeEqual(received, calculated)) throw new ApiError('Firma de webhook inválida.', 401);
+  if (received.length !== calculated.length || !timingSafeEqual(received, calculated)) throw new ApiError("Invalid webhook signature.", 401);
 }
 export function normalizedEvent(body: Record<string, unknown>): VideoEvent | null {
   if (!DAILY_EVENTS.includes(body.type as typeof DAILY_EVENTS[number])) return null;
   if (body.version !== '1.0.0' || typeof body.id !== 'string' || body.id.length > 256 || !body.id || typeof body.event_ts !== 'number' || !Number.isFinite(body.event_ts)
-    || !body.payload || typeof body.payload !== 'object' || Array.isArray(body.payload)) throw new ApiError('Evento inválido.');
+    || !body.payload || typeof body.payload !== 'object' || Array.isArray(body.payload)) throw new ApiError("Invalid event.");
   const input = body.payload as Record<string, unknown>;
   // Explicit allowlist: provider payloads may contain identities or recording access tokens.
   const payload: Record<string, unknown> = {};
   for (const field of ['room', 'user_id', 'session_id', 'joined_at', 'duration', 'meeting_id', 'start_ts', 'end_ts']) {
     if (typeof input[field] === 'string' && (input[field] as string).length <= 256 || typeof input[field] === 'number' && Number.isFinite(input[field])) payload[field] = input[field];
   }
-  if (typeof payload.room !== 'string') throw new ApiError('Evento sin sala.');
+  if (typeof payload.room !== 'string') throw new ApiError("Event has no room.");
   return { event_id: body.id, event_type: body.type as string, event_ts: body.event_ts, payload };
 }
 

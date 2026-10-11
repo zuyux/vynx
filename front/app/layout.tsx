@@ -1,3 +1,4 @@
+import { SITE_MOTTO } from '@/lib/brand';
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -55,7 +56,7 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
-        <footer className="border-t border-white/10 bg-[#0A0A0A] px-6 py-6 text-zinc-300"><LegalLinks /></footer>
+        <footer className="border-t border-white/10 bg-[#0A0A0A] px-6 py-6 text-zinc-300"><p className="mb-3 text-center text-sm">{SITE_MOTTO}</p><LegalLinks /></footer>
         <Script id="service-worker" strategy="afterInteractive">
           {process.env.NODE_ENV === "production"
             ? `if ('serviceWorker' in navigator) {

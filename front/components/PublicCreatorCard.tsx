@@ -1,10 +1,12 @@
 'use client';
+import { SITE_MOTTO } from '@/lib/brand';
 import { UserFacingError, userErrorMessage, responseError } from '@/lib/user-facing-error';
+import { Instagram, Youtube } from '@/components/CardIcons';
 
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import { ArrowUpRight, Heart, ImagePlus, Camera, Link2, Pencil, Share2, UserRound, Play, X } from 'lucide-react';
+import { ArrowUpRight, Heart, ImagePlus, Link2, Pencil, Share2, UserRound, X } from 'lucide-react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import CallBookingPanel from '@/components/CallBookingPanel';
@@ -116,12 +118,12 @@ export function PublicCreatorCard({ creator }: { creator: PublicCreator }) {
               </DialogContent>
             </Dialog>
           </div>
-          <nav aria-label="Creator social links" className="mt-5 flex flex-wrap items-center justify-center gap-3">{Object.entries(design.socials).filter(([, url]) => safeLink(url)).map(([network, url]) => <a key={network} href={safeLink(url)!} target="_blank" rel="noopener noreferrer" aria-label={network === 'x' ? 'X' : network === 'youtube' ? 'YouTube' : 'Instagram'} className="flex size-11 items-center justify-center rounded-xl bg-white/5 text-white/80 transition hover:bg-white/10">{network === 'instagram' ? <Camera size={23} aria-hidden="true" /> : network === 'youtube' ? <Play size={23} aria-hidden="true" /> : <span className="text-xl" aria-hidden="true">𝕏</span>}</a>)}<button onClick={() => void share()} aria-label="Share creator page" className="flex size-11 items-center justify-center rounded-xl bg-white/5 text-white/80 hover:bg-white/10"><Share2 size={21} aria-hidden="true" /></button></nav>
+          <nav aria-label="Creator social links" className="mt-5 flex flex-wrap items-center justify-center gap-3">{Object.entries(design.socials).filter(([, url]) => safeLink(url)).map(([network, url]) => <a key={network} href={safeLink(url)!} target="_blank" rel="noopener noreferrer" aria-label={network === 'x' ? 'X' : network === 'youtube' ? 'YouTube' : 'Instagram'} className="flex size-11 items-center justify-center rounded-xl bg-white/5 text-white/80 transition hover:bg-white/10">{network === 'instagram' ? <Instagram size={23} aria-hidden="true" /> : network === 'youtube' ? <Youtube size={23} aria-hidden="true" /> : <span className="text-xl" aria-hidden="true">𝕏</span>}</a>)}<button onClick={() => void share()} aria-label="Share creator page" className="flex size-11 items-center justify-center rounded-xl bg-white/5 text-white/80 hover:bg-white/10"><Share2 size={21} aria-hidden="true" /></button></nav>
         </div>
       </section>
       {creator.published !== false && <CallBookingPanel key={`${creator.alias}:${session.wallet}`} alias={creator.alias} />}
       {notice && <p role={failed ? 'alert' : 'status'} className={`mt-4 rounded-xl border p-3 text-sm ${failed ? 'border-red-400/30 text-red-400' : 'border-emerald-400/30 text-emerald-500'}`}>{notice}</p>}
-      <footer className={`mt-6 text-center text-[10px] tracking-widest opacity-70 ${creator.published === false ? 'pb-40' : 'pb-16'}`}>VYNX · SOLANA DEVNET</footer>
+      <footer className={`mt-6 text-center text-[10px] tracking-widest opacity-70 ${creator.published === false ? 'pb-40' : 'pb-16'}`}><p>{SITE_MOTTO}</p><p className="mt-2">VYNX · SOLANA DEVNET</p></footer>
     </div>
     {creator.published === false && <p role="status" className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 right-24 z-40 max-w-[460px] rounded-xl border border-violet-400/25 p-4 text-xs leading-5 shadow-lg backdrop-blur-md sm:left-6 sm:right-26 ${light ? 'bg-white/95 text-zinc-900' : 'bg-[#17131e]/95 text-white'}`}>Your card is unpublished. Only you can view it.</p>}
     {isOwner && <Link href="/dashboard/card" aria-label="Edit my creator card" title="Edit my creator card" className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex size-14 items-center justify-center rounded-full text-black shadow-lg transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet-400 sm:right-6" style={{ background: accent }}><Pencil size={22} aria-hidden="true" /></Link>}

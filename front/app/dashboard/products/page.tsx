@@ -7,10 +7,10 @@ import styles from "@/app/dashboard/studio/studio.module.css";
 export default function CreatorProductsPage() {
   const [type,setType]=useState("tickets");
   return <div className={styles.shell}><Sidebar/><main id="main-content" tabIndex={-1} className={styles.main}>
-    <header className={styles.top}><span>VYNX / PRODUCTOS DEL CREADOR</span><Link href="/dashboard/card" className={styles.demo}>Volver a Mi página ↗</Link></header>
-    <div className={styles.heading}><div><p className={styles.eyebrow}>LAS OFERTAS DE TU PERFIL</p><h1>Mis productos</h1><p>Prepara experiencias y membresías para tu comunidad.</p></div></div>
-    <nav className={styles.tabs} aria-label="Tipos de producto"><button aria-pressed={type==="tickets"} onClick={()=>setType("tickets")}>Tickets NFT</button><button aria-pressed={type==="subscriptions"} onClick={()=>setType("subscriptions")}>Suscripciones</button></nav>
-    <p className={styles.integrationNote}>Vista previa con datos de ejemplo. Los cambios duran esta sesión. No se publican productos, se emiten NFTs ni se realizan cobros.</p>
+    <header className={styles.top}><span>VYNX / CREATOR PRODUCTS</span><Link href="/dashboard/card" className={styles.demo}>Back to My page ↗</Link></header>
+    <div className={styles.heading}><div><p className={styles.eyebrow}>YOUR PROFILE OFFERS</p><h1>My products</h1><p>Prepare experiences and memberships for your community.</p></div></div>
+    <nav className={styles.tabs} aria-label="Product types"><button aria-pressed={type==="tickets"} onClick={()=>setType("tickets")}>NFT Tickets</button><button aria-pressed={type==="subscriptions"} onClick={()=>setType("subscriptions")}>Subscriptions</button></nav>
+    <p className={styles.integrationNote}>Preview with example data. Changes last for this session. Products are not published, NFTs are not minted, and no charges are made.</p>
     <div className={styles.content}><div hidden={type!=="tickets"}><StudioTickets/></div><div hidden={type!=="subscriptions"}><StudioMemberships/></div></div>
   </main></div>;
 }

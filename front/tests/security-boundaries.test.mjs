@@ -93,7 +93,7 @@ test('sponsorship authorization rejects a challenge that expires before atomic c
     return Response.json([]);
   };
   try {
-    await assert.rejects(() => authorize('https://vynx.test', { wallet, challenge, action: 'list', payload: {}, signature: sign(null, Buffer.from(message), secret).toString('hex') }), /ya se utilizó/);
+    await assert.rejects(() => authorize('https://vynx.test', { wallet, challenge, action: 'list', payload: {}, signature: sign(null, Buffer.from(message), secret).toString('hex') }), /has already been used/);
     assert.equal(consumed, true);
   } finally {
     globalThis.fetch = previous;

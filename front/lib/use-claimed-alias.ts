@@ -13,10 +13,10 @@ export function useClaimedAlias(wallet: string) {
       try {
         const response = await fetch(`/api/profile?wallet=${encodeURIComponent(wallet)}`, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) });
         const result = await response.json();
-        if (!response.ok) throw responseError(response, result, 'No se pudo consultar tu alias. Vuelve a intentarlo.');
+        if (!response.ok) throw responseError(response, result, "Could not check your alias. Try again.");
         if (!controller.signal.aborted) setSnapshot({ wallet, alias: result.profile?.username ?? '', error: '' });
       } catch (reason) {
-        if (!controller.signal.aborted) setSnapshot({ wallet, alias: '', error: userErrorMessage(reason, 'No se pudo consultar tu alias.') });
+        if (!controller.signal.aborted) setSnapshot({ wallet, alias: '', error: userErrorMessage(reason, "Could not check your alias.") });
       }
     }
     void load();

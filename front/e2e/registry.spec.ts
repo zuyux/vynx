@@ -31,9 +31,9 @@ test('browser registers a one-character alias with sponsorship, publishes and re
   await expect(page.getByText(/VYNX pays network fees/)).toBeVisible();
   await page.getByRole('button', { name: 'Claim alias — 0.92 SOL' }).click();
   await expect(page).toHaveURL(/dashboard\/card/);
-  await page.getByLabel('Nombre de creador').fill('Registry creator');
-  await page.getByRole('button', { name: 'Guardar y publicar', exact: true }).click();
-  await expect(page.getByRole('status').filter({ hasText: /Diseño publicado/ })).toBeVisible();
+  await page.getByLabel("Creator name").fill('Registry creator');
+  await page.getByRole('button', { name: "Save and publish", exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: /Design published/ })).toBeVisible();
   const { data, error } = await db().from('cards_users').select('*').eq('wallet_address', owner.publicKey.toBase58()).single();
   expect(error).toBeNull(); expect(data.claim_lamports).toBe(920000000); expect(data.claim_program).toBe('AxQxAgndT6ziUr3FBNafhJzF4PpniGpMX4fVRXXmh5y8'); expect(data.claim_alias_pda).toBeTruthy(); expect(data.claim_owner_pda).toBeTruthy();
   expect((await confirm(page, owner, alias, data.tx_signature)).status()).toBe(200);
