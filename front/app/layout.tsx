@@ -2,7 +2,7 @@ import { SITE_MOTTO } from '@/lib/brand';
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Script from "next/script";
+import { PwaRegistration } from '@/components/PwaRegistration';
 import "./globals.css";
 import { LegalLinks } from '@/components/LegalLinks';
 import { SITE_TITLE, SITE_DESCRIPTION, siteUrl } from '@/lib/seo';
@@ -52,23 +52,13 @@ export default function RootLayout({
         <link rel="manifest" href="/site.webmanifest" />
       </head>
       <body className="min-h-full flex flex-col">
+        <PwaRegistration />
         <a href="#main-content" className="skip-link">Skip to main content</a>
         <Providers>
           {children}
         </Providers>
         <footer className="border-t border-white/10 bg-[#0A0A0A] px-6 py-6 text-zinc-300"><p className="mb-3 text-center text-sm">{SITE_MOTTO}</p><LegalLinks /></footer>
-        <Script id="service-worker" strategy="afterInteractive">
-          {process.env.NODE_ENV === "production"
-            ? `if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
-              }`
-            : `if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then((registrations) => {
-                  registrations.forEach((registration) => registration.unregister());
-                });
-                caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)));
-              }`}
-        </Script>
+
       </body>
     </html>
   );
