@@ -280,9 +280,10 @@ Goal: let creators sell their time and expertise while fans can assess prior com
 Start after the full alias-to-tip MVP passes end-to-end tests. The first version supports one video-call offer per creator.
 
 - [x] **P2** Let creators define the service offered, duration, price, availability, and booking timezone. (Private persistent configuration; migration 013 required.)
-- [ ] **P2** Let fans choose a slot and pay before the call; verify payment server-side and prevent duplicate payments or double-booked slots.
-- [ ] **P2** Select the payment custody and settlement mechanism; evaluate holding funds until completion and define release, refund, and dispute rules before implementation. (Audited escrow selected; [provider evaluation and proposed policy](docs/booking-escrow-evaluation.md); provider not yet qualified.)
-- [ ] **P2** Provide a private video-call link to the booked participants and select a video provider with verifiable attendance and duration events.
+- [ ] **P2** Let fans choose a slot and pay before the call; verify payment server-side and prevent duplicate payments or double-booked slots. (Custom-program checkout implemented for gated devnet development; production remains pending independent audit and deployment verification. See [implementation](docs/custom-booking-escrow.md).)
+- [ ] **P2** Select the payment custody and settlement mechanism; evaluate holding funds until completion and define release, refund, and dispute rules before implementation. (Custom Solana program development selected for independent audit; [evaluation and policy](docs/booking-escrow-evaluation.md), [implementation](docs/custom-booking-escrow.md); production audit and final policy pending.)
+- [x] **P2** Provide a private video-call link to the booked participants and select a video provider with verifiable attendance and duration events. (Daily private rooms, participant tokens, signed durable attendance events and simultaneous-duration calculation implemented; real two-browser/provider-webhook smoke passed. Deployed on [vynx.me](https://vynx.me) with an active permanent Daily webhook; see [hosted evidence](docs/daily-vercel-smoke.json). Recording remains a separate prototype step. See [prototype spec](docs/ai-dispute-resolution-spec.md).)
+- [ ] **P2** Maintain a Vynx operating treasury and durable server worker to fund and reconcile Daily billing automatically, with spending limits and funds separate from booking escrow. See [treasury spec](docs/daily-operating-treasury-spec.md).
 - [ ] **P2** Track booking states, including awaiting payment, confirmed, completed, cancelled, no-show, and disputed; verify provider events server-side and process them idempotently.
 - [ ] **P2** Define completion criteria using both participants' attendance and session duration. Keep verified completion separate from satisfaction or performance ratings.
 - [ ] **P2** Allow only the paying fan to submit one review per completed booking, with an overall rating, comment, and feedback on punctuality, communication, and fulfillment of the offered service.
@@ -297,6 +298,49 @@ Acceptance criteria:
 - Only sessions meeting documented attendance criteria count as completed; completion is not labeled as proof of a successful experience.
 - Only the paying fan can review a completed booking, once; public ratings and counts derive from eligible persisted records.
 - Cancellation, no-show, failed-call, and dispute flows follow disclosed rules without duplicate settlements or refunds.
+
+---
+
+## Hackathon prototype — Daily call, AI decision, and human appeal
+
+Goal: demonstrate one complete creator/fan dispute journey in a short presentation, using real Daily video infrastructure and clearly labeled simulated financial operations. This is a demo track within Milestone 7; production escrow, treasury automation and reputation acceptance criteria remain open. The invited-user study stays suspended.
+
+Prototype boundary:
+
+- Reuse the existing wallet sessions, creator cards and persisted call offers. Add a seeded creator/fan demo and a 3–5 minute presentation script; short test sessions have a distinct demo duration policy rather than changing production offer limits.
+- Use Daily Prebuilt in a private room, with server-issued participant tokens and two browser contexts. Both participants explicitly consent to recording and AI analysis.
+- Daily costs are paid from a Vynx-funded card through Daily billing. Simulate the treasury worker and funding rail; show operating balance, reserved estimated cost and a reconciled mock bill separately from simulated booking escrow. Do not claim automatic Solana-to-Daily funding is implemented.
+- Use a database-backed simulated escrow adapter for hold/release/refund and a simulated appeal fee. Display “Demo funds — no real payment” and show the mode on every financial outcome. This avoids choosing an unaudited custody mechanism for the demonstration. An actual devnet transfer is optional follow-up work after the core demo; a transfer alone must not be described as audited escrow.
+- Run live AI analysis on a consented recording with timestamped evidence. Persist the initial decision and expose human review only after appeal, with an exception hold for incomplete or inconclusive evidence. Model-generated decisions cannot move real funds.
+
+Build order:
+
+- [ ] **P2 / Demo 1** Add demo-only booking persistence and slot reservation for one offer. Snapshot accepted terms and timezone, store scheduled instants in UTC, enforce creator slot conflicts atomically, and make reservation retries idempotent.
+- [ ] **P2 / Demo 2** Add an explicitly simulated payment/escrow adapter that confirms a demo booking, holds its balance during disputes, and applies one final allocation. Isolate demo records and disable these routes in production; changing a client flag cannot enable demo mode.
+- [ ] **P2 / Demo 3** Integrate Daily room creation, authorized participant join tokens and Prebuilt UI. Enforce booking ownership, room-bound expiring access, recording consent, and server-controlled recording; keep Daily credentials server-side. A shared room URL cannot bypass participant authorization.
+- [ ] **P2 / Demo 4** Authenticate Daily webhooks, persist unique event IDs, reconcile reconnects and capture original recordings into private storage. Show simultaneous attendance, recording coverage and evidence gaps. Missing media produces a hold, not an invented verdict.
+- [ ] **P2 / Demo 5** Implement a minimal asynchronous evidence-analysis worker: transcript plus relevant video/screenshare evidence, versioned rubric, structured findings, valid timestamp references, and an initial release/refund/inconclusive decision. Start with one objectively defined service and full release/refund outcomes; defer partial awards unless the rubric explicitly supports them.
+- [ ] **P2 / Demo 6** Add participant dispute and appeal screens. Show the initial decision, evidence, simulated fee quote and deadline; appeal freezes finalization immediately. Add a privileged human reviewer view to uphold/overturn with a reason, then execute one simulated settlement. Reviewer access must be independent of creator/fan ownership.
+- [ ] **P2 / Demo 7** Add the mock operating-treasury worker with scheduled persistent jobs, spend limits, one low-balance alert and duplicate-job protection. Display forecast/mock billing separately from actual Daily usage; do not fabricate an actual paid invoice.
+- [ ] **P2 / Demo 8** Prepare consented sample cases, a reset/seed command and a presenter script: completed service → dispute → AI decision with timestamps → simulated appeal fee → human verification → final simulated settlement. Keep a recording-failure case demonstrating the exception hold.
+- [ ] **P2 / Demo 9** Test unauthorized room/evidence access, concurrent slot requests, webhook retries, decision/appeal deadline races, worker retries and repeated settlement. Rehearse on desktop and a mobile viewport and verify Daily recording retrieval before presenting.
+
+Demo reliability:
+
+- Process recording/transcription/AI work asynchronously with visible queued/running/failed states and bounded retries. Do not promise an instant decision while Daily is still preparing media.
+- Prepare a consented prerecorded case for a short presentation or provider/network outage. Clearly show “Prerecorded demo case” or “Fixture result”; never label fixtures as live verified attendance or a fresh AI decision.
+- Demo-only clock advancement may accelerate appeal deadlines for the presenter. Keep an audit event, server-side demo authorization and a visible accelerated-time label; normal production deadline logic remains unchanged.
+- Add a Daily usage cap and enough operating reserve for rehearsals. Reserve provider costs before creating demo rooms and stop creating new rooms on insufficient capacity. Do not interrupt active recordings to satisfy the cap.
+
+Acceptance criteria:
+
+- Two authorized participants can complete a consented Daily test call and the server retrieves its recording and authenticated attendance evidence.
+- A dispute produces an explainable AI decision, a human can verify it after appeal, and repeat requests cannot create multiple financial outcomes.
+- Simulated service escrow, simulated appeal fees and Vynx operating funds are visibly distinct. Real Daily billing is not represented as a simulated supplier payment or an on-chain settlement.
+- The presenter can reset and demonstrate the whole journey in 3–5 minutes using a labeled prerecorded case when asynchronous processing would exceed the presentation window.
+- Documentation lists implemented versus simulated behavior and remaining production dependencies. Completing this milestone does not mark audited escrow, automatic treasury funding or production settlement done.
+
+Reference specs: [AI dispute resolution and Daily integration](docs/ai-dispute-resolution-spec.md), [Vynx operating treasury](docs/daily-operating-treasury-spec.md), [escrow evaluation](docs/booking-escrow-evaluation.md).
 
 ---
 
@@ -331,7 +375,7 @@ Work in vertical slices and keep production deployable after each slice:
 4. Dynamic public profile
 5. Verified SOL tip
 6. End-to-end hardening and invited-user release
-7. Paid video-call bookings, verified completion, and verified reviews
+7. Hackathon Daily/AI/appeal prototype with labeled simulated funds, then production paid video-call bookings, verified completion, and verified reviews
 
 Do not start subscriptions, products, or bookings until the full alias-to-tip path passes end-to-end tests.
 
@@ -339,7 +383,7 @@ Do not start subscriptions, products, or bookings until the full alias-to-tip pa
 
 A task is done when:
 
-- implementation is complete and contains no mock data for that behavior;
+- implementation is complete and contains no mock data for that behavior; the explicitly scoped hackathon demo may use labeled simulated financial operations and fixtures, which do not satisfy production completion criteria;
 - authorization and input validation are enforced server-side;
 - loading, empty, success, and failure states are handled;
 - relevant automated tests are added or updated;

@@ -1,0 +1,9 @@
+{
+  "network": "devnet",
+  "programId": "B6FdE4aAcavkyh1u7UXadQXTQrGYmGWpPqKbfQ6sX7mY",
+  "configPda": "GDUGz6765qY52TrHvyN1j1UY8XhZPTYQfRnKwCsavX3x",
+  "deployer": "9ytC5Uqmo9pypjZ4doudroGNdVJgSPsM2RxMwfjdSy7g",
+  "binarySha256": "2ad257f6d5a84c4b53a503192f156ce0437b95e68e756a08b04f6a1aea6a2d88",
+  "deployedAt": "2026-10-11T19:12:46.840Z",
+  "deploymentSignature": "24PyMguaXHRMYUjmBsmvozwW9XxnqpdZ5skYFQjeLb6fyUxQtVh42Lkr67MNXuxVH6B81TRm4EPz381y234bBR5m"
+}

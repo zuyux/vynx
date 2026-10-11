@@ -7,9 +7,11 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
+vynx_booking = "B6FdE4aAcavkyh1u7UXadQXTQrGYmGWpPqKbfQ6sX7mY"
 vynx_alias = "AxQxAgndT6ziUr3FBNafhJzF4PpniGpMX4fVRXXmh5y8"
 
 [programs.devnet]
+vynx_booking = "B6FdE4aAcavkyh1u7UXadQXTQrGYmGWpPqKbfQ6sX7mY"
 vynx_alias = "AxQxAgndT6ziUr3FBNafhJzF4PpniGpMX4fVRXXmh5y8"
 
 [provider]

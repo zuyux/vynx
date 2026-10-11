@@ -1,0 +1,33 @@
+set role service_role;
+do $$
+declare o uuid; b jsonb; again jsonb; other jsonb; slot timestamptz; booking_id uuid;
+begin
+  select call_offers.id into o from public.call_offers where creator_wallet = 'audit-wallet';
+  update public.call_offers set timezone='UTC',availability='[{"weekday":0,"start":"09:00","end":"12:00"},{"weekday":1,"start":"09:00","end":"12:00"},{"weekday":2,"start":"09:00","end":"12:00"},{"weekday":3,"start":"09:00","end":"12:00"},{"weekday":4,"start":"09:00","end":"12:00"},{"weekday":5,"start":"09:00","end":"12:00"},{"weekday":6,"start":"09:00","end":"12:00"}]', accepting=true where call_offers.id=o;
+  slot:=date_trunc('day',now()) + interval '1 day 9 hours';
+  b:=public.reserve_call(o,'fan-one',slot);booking_id:=(b->>'id')::uuid;
+  again:=public.reserve_call(o,'fan-one',slot);
+  if b->>'id' <> again->>'id' then raise exception 'Retry created another booking'; end if;
+  begin perform public.reserve_call(o,'fan-two',slot + interval '15 minutes'); raise exception 'Overlap accepted'; exception when exclusion_violation then null; end;
+  begin perform public.reserve_call(o,'audit-wallet',slot); raise exception 'Self booking accepted'; exception when raise_exception then if sqlerrm <> 'Offer unavailable' then raise; end if; end;
+  begin perform public.reserve_call(o,'fan-two',slot+interval '1 minute'); raise exception 'Off-grid time accepted'; exception when raise_exception then if sqlerrm <> 'Slot outside availability' then raise; end if; end;
+  b:=public.prepare_call_payment(booking_id,'fan-one','original',100);
+  again:=public.prepare_call_payment(booking_id,'fan-one','replacement',200);
+  if again->>'transaction' <> 'original' then raise exception 'Checkout retry replaced transaction'; end if;
+  update public.call_bookings set expires_at=now()-interval '1 second' where call_bookings.id=booking_id;
+  perform public.expire_call_reservation(booking_id,100);
+  if (select state from public.call_bookings where call_bookings.id=booking_id) <> 'awaiting_payment' then raise exception 'Live blockhash slot released'; end if;
+  b:=public.confirm_call_payment(booking_id,'fan-one','signature-one');
+  again:=public.confirm_call_payment(booking_id,'fan-one','signature-one');
+  if again->>'state' <> 'confirmed' then raise exception 'Confirmation retry not idempotent'; end if;
+  perform public.expire_call_reservation(booking_id,101);
+  if (select state from public.call_bookings where call_bookings.id=booking_id) <> 'confirmed' then raise exception 'Funded slot expired'; end if;
+  other:=public.reserve_call(o,'fan-two',slot+interval '30 minutes');
+  begin perform public.confirm_call_payment((other->>'id')::uuid,'fan-two','signature-one'); raise exception 'Signature reused'; exception when unique_violation then null; end;
+  update public.call_bookings set expires_at=now()-interval '1 second' where call_bookings.id=(other->>'id')::uuid;
+  perform public.expire_call_reservation((other->>'id')::uuid,101);
+  perform public.reserve_call(o,'fan-three',slot+interval '30 minutes');
+  update public.call_offers set price_units=9000000 where call_offers.id=o;
+  if (select price_units from public.call_bookings where call_bookings.id=booking_id) = 9000000 then raise exception 'Terms snapshot changed'; end if;
+end $$;
+reset role;

@@ -7,6 +7,7 @@ import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { ArrowUpRight, Heart, ImagePlus, Camera, Link2, Pencil, Share2, UserRound, Play, X } from 'lucide-react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import CallBookingPanel from '@/components/CallBookingPanel';
 import { TipForm } from '@/components/TipForm';
 import { useWalletSession } from '@/components/WalletSessionProvider';
 import { draftFromProfile, safeLink, type CreatorDraft } from '@/lib/creator-draft';
@@ -118,6 +119,7 @@ export function PublicCreatorCard({ creator }: { creator: PublicCreator }) {
           <nav aria-label="Creator social links" className="mt-5 flex flex-wrap items-center justify-center gap-3">{Object.entries(design.socials).filter(([, url]) => safeLink(url)).map(([network, url]) => <a key={network} href={safeLink(url)!} target="_blank" rel="noopener noreferrer" aria-label={network === 'x' ? 'X' : network === 'youtube' ? 'YouTube' : 'Instagram'} className="flex size-11 items-center justify-center rounded-xl bg-white/5 text-white/80 transition hover:bg-white/10">{network === 'instagram' ? <Camera size={23} aria-hidden="true" /> : network === 'youtube' ? <Play size={23} aria-hidden="true" /> : <span className="text-xl" aria-hidden="true">𝕏</span>}</a>)}<button onClick={() => void share()} aria-label="Share creator page" className="flex size-11 items-center justify-center rounded-xl bg-white/5 text-white/80 hover:bg-white/10"><Share2 size={21} aria-hidden="true" /></button></nav>
         </div>
       </section>
+      {creator.published !== false && <CallBookingPanel key={`${creator.alias}:${session.wallet}`} alias={creator.alias} />}
       {notice && <p role={failed ? 'alert' : 'status'} className={`mt-4 rounded-xl border p-3 text-sm ${failed ? 'border-red-400/30 text-red-400' : 'border-emerald-400/30 text-emerald-500'}`}>{notice}</p>}
       <footer className={`mt-6 text-center text-[10px] tracking-widest opacity-70 ${creator.published === false ? 'pb-40' : 'pb-16'}`}>VYNX · SOLANA DEVNET</footer>
     </div>

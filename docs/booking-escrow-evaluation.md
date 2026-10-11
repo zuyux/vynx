@@ -40,3 +40,7 @@ Seek a Solana provider offering an audited service-escrow primitive with these c
 ## Updated resolution direction — 2026-10-11
 
 The user chose an initial AI-assisted decision with human verification on appeal; an appeal may have a disclosed fee. See the [prototype specification](ai-dispute-resolution-spec.md) for evidence requirements, deadline/fee proposals, exception holds and provider evaluation. This replaces the earlier blanket human-resolution proposal; it does not select an escrow provider or authorize real-money settlement.
+
+## Custom-program development selected — 2026-10-11
+
+The user chose development of a dedicated program. A separate Anchor escrow and gated devnet booking checkout are implemented locally; see [custom booking escrow](custom-booking-escrow.md). This changes the development direction, not the audit requirement. No third-party provider is adopted. Production checkout remains disabled pending independent audit, final policy and the documented launch checks.

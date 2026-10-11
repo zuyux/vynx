@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
@@ -44,6 +44,21 @@ try {
     docker(sqlArgs, readFileSync(`supabase/migrations/${file}`, 'utf8'));
   }
   docker(sqlArgs, readFileSync('tests/security-db.sql', 'utf8'));
+  docker(sqlArgs, readFileSync('tests/call-bookings-db.sql', 'utf8'));
+  docker(sqlArgs, readFileSync('tests/call-video-db.sql', 'utf8'));
+  const concurrentSql = input => new Promise((resolve, reject) => {
+    const child = spawn('docker', [...sqlArgs, '-tA'], { stdio: ['pipe', 'pipe', 'pipe'] });
+    let output = '', error = '';
+    child.stdout.on('data', data => { output += data; }); child.stderr.on('data', data => { error += data; });
+    child.on('error', reject); child.on('close', code => resolve({ code, output, error })); child.stdin.end(input);
+  });
+  const reserve = (payer, time) => `set role service_role; select public.reserve_call((select id from public.call_offers where creator_wallet='audit-wallet'),'${payer}',date_trunc('day',now()) + interval '2 days ${time}') ->> 'id';`;
+  const conflict = await Promise.all([concurrentSql(reserve('race-one','10 hours')), concurrentSql(reserve('race-two','10 hours 15 minutes'))]);
+  assert.equal(conflict.filter(result => result.code === 0).length, 1, 'concurrent overlapping reservations have one winner');
+  assert.match(conflict.find(result => result.code !== 0).error, /exclusion constraint/);
+  const retries = await Promise.all([concurrentSql(reserve('retry-fan','11 hours')), concurrentSql(reserve('retry-fan','11 hours'))]);
+  assert.ok(retries.every(result => result.code === 0), 'concurrent retries both succeed');
+  assert.equal(retries[0].output, retries[1].output, 'concurrent retries return the same booking');
   console.info('All migrations passed: private tables/RPCs, inherited grants, service-role access, future defaults, and creator Storage policies verified.');
 } finally {
   if (started) docker(['stop', name]);

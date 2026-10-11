@@ -1,0 +1,17 @@
+{
+  "network": "devnet",
+  "signature": "24qUWCvWtcpmpP7vNL4ng8qb7MshxY8RHXdB5PkFVMivw5xbzUNgWwowNiC1ieipPCpHqBky8SbcJZcbaQnvyB1p",
+  "transfers": [
+    {
+      "from": "7kbuAAJkBnxwJXpgxvBsLWhpc4SZ7rWsRh7xGDpLPLYP",
+      "to": "9ytC5Uqmo9pypjZ4doudroGNdVJgSPsM2RxMwfjdSy7g",
+      "lamports": 60000000
+    },
+    {
+      "from": "AK6BLhQuJL8Y5KL7j4NDuNdQ5A3L1DKWPgb8HCNvgYmG",
+      "to": "9ytC5Uqmo9pypjZ4doudroGNdVJgSPsM2RxMwfjdSy7g",
+      "lamports": 25000000
+    }
+  ],
+  "deployerBalanceLamports": 1606892880
+}

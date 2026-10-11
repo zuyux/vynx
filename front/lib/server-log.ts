@@ -10,7 +10,7 @@ const requests = new AsyncLocalStorage<RequestContext>();
 type Event = 'request_completed' | 'creator_image_cleanup_pending' | 'creator_image_rollback_deferred' | 'monitoring_alert_failed';
 type Fields = { status?: number; duration_ms?: number; count?: number; deleted?: number; deferred?: number; failed?: number; blocked?: number; unexpected?: boolean };
 const routes = new Set([
-  '/api/call-offer', '/api/aliases', '/api/dashboard', '/api/profile', '/api/sponsorships',
+  '/api/calls', '/api/daily/webhook', '/api/bookings', '/api/call-offer', '/api/aliases', '/api/dashboard', '/api/profile', '/api/sponsorships',
   '/api/auth/nonce', '/api/auth/session', '/api/tips', '/api/tips/confirm',
   '/api/actions/claim-alias', '/api/actions/claim-alias/confirm', '/api/actions/claim-alias/pending',
   '/api/actions/tip/[alias]', '/api/actions/tip/[alias]/confirm',

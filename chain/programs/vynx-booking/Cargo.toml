@@ -1,0 +1,23 @@
+[package]
+name = "vynx-booking"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "vynx_booking"
+
+[features]
+default = []
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+
+[dependencies]
+anchor-lang = "=1.2.1"
+anchor-spl = { version = "=1.2.1", default-features = false, features = ["token", "token_2022", "solana-v3"] }

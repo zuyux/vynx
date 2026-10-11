@@ -1,10 +1,10 @@
 # AI-first call dispute resolution — prototype specification
 
-Date: 2026-10-11. Status: design specification; no implementation or production approval. Owner/support: 40230@pm.me.
+Date: 2026-10-11. Status: private-call P2 deployed on Vercel at vynx.me and verified against live Daily with signed attendance events; recording/AI prototype pending. Owner/support: 40230@pm.me.
 
 ## Product decision and scope
 
-The user requests an AI-assisted initial resolution, followed by human verification if either party appeals. Human appeals may require a separate fee. This supersedes the earlier recommendation to require human review for every contested initial decision. The custody direction remains audited escrow; its program/provider is unresolved. Prototype decisions and financial outcomes use simulated escrow or devnet funds until that dependency is satisfied.
+The user requests an AI-assisted initial resolution, followed by human verification if either party appeals. Human appeals may require a separate fee. This supersedes the earlier recommendation to require human review for every contested initial decision. Daily is selected as the video provider for the prototype. The user authorized a custom devnet escrow and waived the independent-audit prerequisite for the hackathon MVP. Its funded/refunded smoke test is recorded in `chain/booking-devnet-funding-smoke.json`. Mainnet production remains outside this exception. Prototype decisions and financial outcomes use simulated escrow or devnet funds.
 
 The feature evaluates whether a booked service was delivered using the accepted offer, authenticated attendance, provider recording, and both parties' evidence. Attendance establishes participation, not fulfillment. Satisfaction and performance ratings remain separate. The system returns a reasoned initial decision, permits appeal, and generates one final settlement instruction. It does not give the LLM signing keys or authority to move funds.
 
@@ -12,7 +12,7 @@ Prototype languages: Spanish and English. Offer scope: one video-call service pe
 
 ## Proposed defaults versus committed requirements
 
-Committed: AI first, human verification on appeal, potential disclosed appeal fee, consented evidence, participant authorization, deterministic attendance checks, escrow hold until finality, and separation from reviews.
+Committed: Daily for video, AI first, human verification on appeal, potential disclosed appeal fee, consented evidence, participant authorization, deterministic attendance checks, escrow hold until finality, and separation from reviews.
 
 Proposed prototype defaults: 24-hour dispute filing period after the scheduled end; 48-hour evidence submission period after filing; 48-hour appeal period after the decision is available to both parties; human-review target of seven calendar days; one human appeal round per dispute. These are testable defaults, not published production Terms. All times use UTC instants with localized display. Late evidence and changed decisions restart the appeal period. Missing evidence must never silently become a creator payout or fan refund.
 
@@ -27,25 +27,27 @@ Proposed prototype defaults: 24-hour dispute filing period after the scheduled e
 7. Either participant may accept or appeal. Mutual acceptance finalizes early; otherwise the decision finalizes after the appeal period only if notifications/access were available and no timely appeal is pending. A server records deadline eligibility independently of a UI timer.
 8. A human verifies appealed cases, reviews original evidence and may uphold, change, or decline the AI decision. Both parties receive the final reasoned outcome. Financial execution uses a separate authorized and idempotent settlement worker.
 
-## Provider evaluation and prototype choice
+## Selected video provider: Daily
 
-Research checked on 2026-10-11. This is a documentation-based recommendation, not a tested integration or account purchase.
+Research checked on 2026-10-11. The user selected Daily following this evaluation. Provider selection is complete; integration validation, account setup and commercial/privacy review remain pending.
 
 | Provider | Findings | Prototype decision |
 | --- | --- | --- |
 | Brave Talk | Premium allows host recording; Brave documents moderator access to recordings/transcripts for 24 hours. It is based on Jitsi/8x8. The reviewed public materials did not establish supported server room/token provisioning, signed attendance webhooks, or automated recording retrieval for third-party applications. This is an evidence gap, not proof those features do not exist. | Suitable for manually collected demonstration calls only. Not selected for integrated adjudication unless Brave supplies those capabilities. |
-| Daily | Documents meeting-token identity, timestamped participant webhook events, HMAC authentication, and cloud/raw-track recording. Prebuilt UI offers a short path to a prototype. | Recommended first integration spike. Verify reconnect history, recording completeness, identity restrictions and server API reconciliation in an actual two-user test. |
-| LiveKit | Documents server tokens, authenticated room/participant webhooks and recording through Egress, including participant and screenshare tracks. | Alternative when more control over tracks, deployment and UI is needed. Confirm operational cost and recording setup in a separate spike. |
+| Daily | Documents meeting-token identity, timestamped participant webhook events, HMAC authentication, and cloud/raw-track recording. Prebuilt UI offers a short path to a prototype. | Selected for the prototype. Start with Daily Prebuilt and server-side room/token provisioning. Verify reconnect history, recording completeness, identity restrictions and server API reconciliation in an actual two-user test. |
+| LiveKit | Documents server tokens, authenticated room/participant webhooks and recording through Egress, including participant and screenshare tracks. | Evaluated alternative; not selected. Reconsider only through an explicit provider-change decision if more control over tracks, deployment and UI is needed. Confirm operational cost and recording setup in a separate spike. |
 
 Sources: [Brave Talk](https://brave.com/talk/), [Daily meeting tokens](https://docs.daily.co/reference/rest-api/meeting-tokens), [Daily participant events](https://docs.daily.co/reference/rest-api/webhooks/events/participant-joined), [Daily webhook authentication](https://docs.daily.co/reference/rest-api/webhooks), [Daily recording](https://www.daily.co/products/recording/), [LiveKit webhooks](https://docs.livekit.io/intro/basics/rooms-participants-tracks/webhooks-events/), [LiveKit Egress](https://docs.livekit.io/transport/media/ingress-egress/egress/).
 
 Do not infer that provider attendance proves the human identity behind a wallet, that media was actually viewed, or that content was useful. Bind tokens to opaque booking participant IDs and explicit roles; do not send wallet addresses unnecessarily. Provider recording access means the provider can process plaintext media; do not promise end-to-end secrecy while server recording or AI processing is enabled.
 
-### Daily proof-of-concept requirements
+### Daily integration requirements
 
 Provision an unguessable private room with server-minted, room-bound, expiring meeting tokens and participant IDs. Deny guests and unauthorized third participants. Participants have no API keys or room-admin/recording-delete capability. Validate exact provider configuration in the spike rather than assuming all controls are available.
 
 Subscribe to participant join/leave, meeting lifecycle, recording-ready and failure events supported by the API. Authenticate with Daily's documented HMAC scheme and reject replay; keep body serialization consistent with its signature specification. Use an explicit HMAC secret when registering the webhook so the first verification request is verifiable. Persist accepted events before acknowledging delivery; process expensive work asynchronously. Monitor failed webhook delivery and reconcile gaps through server APIs. Never use browser callbacks as financial evidence.
+
+Persist `video_provider = daily` with each booking and retain the Daily room, meeting/session and recording identifiers for reconciliation. Keep Daily API and webhook credentials server-side. Use a provider adapter for room creation, participant token issuance, recording retrieval and event normalization; implement only Daily in this prototype.
 
 Retrieve the original recording through server authorization into private storage. Test both speakers, screen share, reconnections, late arrivals, short calls and recording failure. A successful recording-ready event alone does not certify a complete recording.
 
@@ -54,6 +56,10 @@ Retrieve the original recording through server authorization into private storag
 Daily currently lists $0.004 per participant-minute after its monthly free allowance and $0.01349 per cloud video recording minute, with an additional storage rate of $0.003/minute. A 30-minute two-person call is approximately $0.6447 for video plus recording, or $0.7347 including that listed storage charge, before transcription, AI analysis, human review, taxes and other costs. This ignores free allowances and discounts and is not a final invoice estimate. Validate storage billing units/retention and recording-mode pricing before publishing fees. [Daily pricing](https://www.daily.co/pricing/video-sdk/)
 
 Human appeal cost is separately estimated as reviewer minutes × reviewer rate plus payment/operating costs. No appeal amount is selected. Store a capped quote; never derive an automatic charge from this estimate or conceal it in the escrow allocation.
+
+### Vynx treasury and Daily billing
+
+Vynx will retain platform-owned operating funds for Daily costs and run a durable server worker for reserve forecasting, bounded funding and billing reconciliation. Daily uses its supported automatic card billing; direct Solana billing is not assumed. Customer service principal stays in audited escrow and is never used as an operating reserve. See the [operating treasury specification](daily-operating-treasury-spec.md) for funds flow, authorization, retry behavior, low-balance controls and implementation dependencies.
 
 ## Evidence and integrity
 
@@ -109,7 +115,7 @@ Use a database lock/version check for deadline finalization versus appeal creati
 
 Persist `call_disputes` (unique booking, opener, deadlines, policy, state/version), `call_evidence` (private object metadata, provenance, hashes), `call_provider_events` (unique provider/event ID), `call_attendance_intervals`, `call_ai_runs`, `call_decisions`, `call_appeals`, `call_appeal_fee_payments`, `call_review_assignments`, `call_settlement_operations`, and append-only access/transition audit records. Wallet-derived participant IDs are stored server-side; public Creator Cards never expose recordings, claims, private links or dispute evidence.
 
-Proposed routes: participant-authenticated `POST /api/bookings/:id/disputes`, `GET /api/disputes/:id`, `POST /api/disputes/:id/evidence`, `POST /api/disputes/:id/appeals`, `POST /api/appeals/:id/fee/confirm`; privileged reviewer decision route; signature-authenticated provider webhook route. All wallet mutations enforce same-origin checks, ownership, bounded payloads and existing rate limits. Reviewer privileges are never inferred from wallet ownership alone. Private data uses RLS/restricted service access and no-store responses; uploads/downloads use short-lived signed links.
+Proposed routes: participant-authenticated `POST /api/bookings/:id/disputes`, `GET /api/disputes/:id`, `POST /api/disputes/:id/evidence`, `POST /api/disputes/:id/appeals`, `POST /api/appeals/:id/fee/confirm`; privileged reviewer decision route; signature-authenticated `POST /api/webhooks/daily` route. All wallet mutations enforce same-origin checks, ownership, bounded payloads and existing rate limits. Reviewer privileges are never inferred from wallet ownership alone. Private data uses RLS/restricted service access and no-store responses; uploads/downloads use short-lived signed links.
 
 ## Privacy, access and operations
 
@@ -135,10 +141,10 @@ Build a consented benchmark of clear delivery, nondelivery, partial delivery, no
 
 ## Delivery sequence and unresolved launch decisions
 
-1. Daily integration spike with two test participants; verify private identity, signed events and complete retrievable recordings.
+1. Implement the selected Daily integration spike with two test participants; verify private identity, signed events and complete retrievable recordings.
 2. Evidence pipeline, deterministic checks and mock cases; simulated escrow and fees.
 3. AI evaluator, participant decision view, deadlines and human appeal workspace.
 4. Adversarial/concurrency tests and shadow benchmark; confirm fee economics.
 5. Only then connect a selected audited escrow through a separately tested settlement adapter.
 
-Open decisions: escrow program/provider and recovery rules; model/video-analysis strategy; final appeal fee/refund/waiver amounts; human resolver and conflict process; final deadlines and retention; allowed service categories; benchmark release thresholds; recording/provider contractual and privacy requirements. The invited-user study remains suspended. No provider subscription, credentials, external invitations or live funding are authorized by this document alone.
+Open decisions: escrow program/provider and recovery rules; model/video-analysis strategy; final appeal fee/refund/waiver amounts; human resolver and conflict process; final deadlines and retention; allowed service categories; benchmark release thresholds; Daily recording configuration, contractual and privacy requirements; operating funding rail, billing instrument and reserve/spend limits. Video-provider selection is resolved; Daily integration is not yet implemented. The invited-user study remains suspended. No provider subscription, credentials, external invitations or live funding are authorized by this document alone.

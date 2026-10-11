@@ -1,0 +1,17 @@
+{
+  "network": "devnet",
+  "programId": "B6FdE4aAcavkyh1u7UXadQXTQrGYmGWpPqKbfQ6sX7mY",
+  "configVerified": true,
+  "binaryVerified": true,
+  "quote": "2gdcB2JEc52KiRVVjyxhHZT6LvpE356ThNzfxrDNb6GQ",
+  "resolver": "64m9dhtaxtUXjXZZVv5jx6eAaBmMvhDiqU577MRpEivv",
+  "mint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+  "source": "7kEXcfkL8MmgUexmyzdvEwEFodmD1LctaAia67Quwnmg",
+  "sourceBalanceUnits": "0",
+  "ataSignature": "5PbHMG5WGnLTzhqxTr4vwdTPGBgKKvygaCHknJm3VV8JwEvc5ufQqBCgFw94aQfSu2ZTdMJBohu9LhZjgt44F278",
+  "unauthorizedQuoteRejected": true,
+  "insufficientUsdcRejected": true,
+  "failedFundingCreatesNoReceiptOrVault": true,
+  "successfulFunding": "Not run: development wallet has no test USDC",
+  "verifiedAt": "2026-10-11T19:13:49.680Z"
+}

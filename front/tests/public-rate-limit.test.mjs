@@ -83,6 +83,13 @@ test('every API mutation checks quota before reading bodies or running business 
       if (entry.isDirectory()) inspect(path);
       else if (entry.name === 'route.ts') {
         const source = readFileSync(path, 'utf8');
+        if (path.endsWith('/api/daily/webhook/route.ts')) {
+          // Provider deliveries are authenticated by HMAC before any database work.
+          // Browser quotas would throttle retries and break Daily's signed setup probe.
+          assert.match(source, /verifyDailyWebhook\(request.headers, body\)/);
+          assert.ok(source.indexOf('verifyDailyWebhook(request.headers, body)') < source.indexOf('const db = appDb()'));
+          continue;
+        }
         for (const match of source.matchAll(/export async function (POST|PATCH|PUT|DELETE)\([^]*?\) \{([^]*?)  try \{/g)) {
           assert.match(match[2], /await limitPublicEndpoint\(request,/, `${path} ${match[1]}`);
           assert.match(match[2], /if \(limited\) return limited;/);

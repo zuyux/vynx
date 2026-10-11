@@ -1,0 +1,34 @@
+{
+  "deployed_at": "2026-10-11T20:23:54.894088+00:00",
+  "url": "https://vynx.me",
+  "deployment_url": "https://vynx-8as1m9x0m-fabohaxs-projects.vercel.app",
+  "deployment_id": "dpl_ARPJM3hvSupvirigsQsFwqdvEZtf",
+  "project": "fabohaxs-projects/vynx",
+  "environment": "production",
+  "status": "READY",
+  "framework": "Next.js 16.3.8",
+  "source_base_commit": "53f29c6",
+  "includes_uncommitted_workspace_changes": true,
+  "build_seconds": 19,
+  "webhook_url": "https://vynx.me/api/daily/webhook",
+  "webhook_state": "ACTIVE",
+  "webhook_failed_count": 0,
+  "escrow_network": "Solana devnet",
+  "hackathon_audit_exception": true,
+  "recording_enabled": false,
+  "verification": {
+    "unit_api_tests_passed": 128,
+    "lint": "passed",
+    "typecheck": "passed",
+    "build": "passed",
+    "staged_call_page_http": 200,
+    "staged_unauthenticated_call_api_http": 401,
+    "staged_signed_webhook_http": 200,
+    "hosted_daily_smoke": "docs/daily-vercel-smoke.json",
+    "error_scan": "no error logs found during post-deploy 10-minute scan"
+  },
+  "monitoring": {
+    "runtime_logs": "checked",
+    "persistent_error_alerts": "schema applied; dispatcher and external alert destination not configured"
+  }
+}

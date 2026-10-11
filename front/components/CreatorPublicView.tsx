@@ -1,4 +1,5 @@
 'use client';
+import CallBookingPanel from './CallBookingPanel';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -57,7 +58,7 @@ export function CreatorPublicView({ profile, ad, design, preview = false, onRequ
           </form>}
           <p className="mt-5 flex items-start gap-2 text-[10px] leading-5 opacity-70"><ShieldCheck size={14} className="mt-0.5 shrink-0" />Puedes explorar sin wallet. Conectarla permite firmar tu propuesta; el pago se realiza después de la aprobación.</p>
         </section>
-      </div><footer className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-current/10 py-6 text-xs opacity-70"><p>Un espacio propio. Una comunidad conectada.</p><Link href="/dashboard/card" className="inline-flex items-center gap-1">Crea tu espacio en Vynx<Link2 size={12} /></Link></footer>
+      </div>{!preview && <CallBookingPanel key={`${profile.alias}:${wallet}`} alias={profile.alias} />}<footer className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-current/10 py-6 text-xs opacity-70"><p>Un espacio propio. Una comunidad conectada.</p><Link href="/dashboard/card" className="inline-flex items-center gap-1">Crea tu espacio en Vynx<Link2 size={12} /></Link></footer>
     </div>
   </main>;
 }

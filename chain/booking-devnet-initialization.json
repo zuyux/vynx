@@ -1,0 +1,9 @@
+{
+  "cluster": "devnet",
+  "command": "initialize",
+  "signature": "2nQZZQ7GcrA2KcMQJuzVpcKFsfKiNB6myaL5GrJaWuLAJhs9gEEqnh64LQgs59eWdFXWsZf3PujtJMy8sobrkjMN",
+  "program": "B6FdE4aAcavkyh1u7UXadQXTQrGYmGWpPqKbfQ6sX7mY",
+  "state": "configured",
+  "quote": "2gdcB2JEc52KiRVVjyxhHZT6LvpE356ThNzfxrDNb6GQ",
+  "resolver": "64m9dhtaxtUXjXZZVv5jx6eAaBmMvhDiqU577MRpEivv"
+}

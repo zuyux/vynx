@@ -8,13 +8,18 @@
     "prices:devnet": "node scripts/devnet.cjs prices",
     "deploy:devnet": "node scripts/deploy-devnet.cjs",
     "fund:devnet": "node scripts/devnet.cjs fund",
-    "smoke:migration:devnet": "node scripts/migration-smoke.cjs"
+    "smoke:migration:devnet": "node scripts/migration-smoke.cjs",
+    "deploy:booking:devnet": "node scripts/deploy-booking-devnet.cjs",
+    "initialize:booking:devnet": "node scripts/booking-devnet.cjs initialize",
+    "smoke:booking:devnet": "node scripts/booking-smoke-devnet.cjs",
+    "test:booking:devnet": "node --env-file=../front/.env.local scripts/booking-funding-devnet.cjs"
   },
   "dependencies": {
     "@solana/web3.js": "1.98.4"
   },
   "devDependencies": {
     "@solana/kit": "8.4.0",
+    "@solana/spl-token": "^0.4.15",
     "litesvm": "1.6.0"
   }
 }

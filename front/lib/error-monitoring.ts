@@ -3,7 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { appDb } from './app-db';
 
 export const MONITORED_ROUTES = [
-  '/api/call-offer', '/api/aliases', '/api/dashboard', '/api/profile', '/api/sponsorships',
+  '/api/bookings', '/api/call-offer', '/api/aliases', '/api/dashboard', '/api/profile', '/api/sponsorships',
   '/api/auth/nonce', '/api/auth/session', '/api/tips', '/api/tips/confirm',
   '/api/actions/claim-alias', '/api/actions/claim-alias/confirm', '/api/actions/claim-alias/pending',
   '/api/actions/tip/[alias]', '/api/actions/tip/[alias]/confirm',
@@ -12,7 +12,7 @@ const methods = ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'HEAD', 'OPTIONS'];
 export type MonitoringEvent = {
   kind: 'api_5xx' | 'payment_verification_failed'; route: string; method: string;
   status: number; request_id: string;
-  payment_flow?: 'tip' | 'alias_claim' | 'sponsorship';
+  payment_flow?: 'tip' | 'alias_claim' | 'sponsorship' | 'booking';
   outcome?: 'transaction_failed' | 'payment_mismatch' | 'verification_rejected' | 'service_error';
 };
 
@@ -30,7 +30,7 @@ export function monitoringEvent(value: unknown): MonitoringEvent | null {
     return { kind: data.kind, route: data.route as string, method: data.method as string, status: data.status, request_id: data.request_id };
   }
   if (data.kind !== 'payment_verification_failed' || data.status < 400 || data.status > 599
-    || !['tip', 'alias_claim', 'sponsorship'].includes(data.payment_flow as string)
+    || !['tip', 'alias_claim', 'sponsorship', 'booking'].includes(data.payment_flow as string)
     || !['transaction_failed', 'payment_mismatch', 'verification_rejected', 'service_error'].includes(data.outcome as string)) return null;
   return { kind: data.kind, route: data.route as string, method: data.method as string, status: data.status, request_id: data.request_id,
     payment_flow: data.payment_flow as MonitoringEvent['payment_flow'], outcome: data.outcome as MonitoringEvent['outcome'] };

@@ -79,3 +79,7 @@ The included client constructs known instructions directly; the generated Anchor
 ## Legacy migration
 
 The new `migrate_verified_claim` instruction requires paused registration, current admin and owner signatures, and a short expiry. The admin pays deposits; the creator pays zero. The program upgrade and a zero-charge disposable-wallet migration were verified on devnet on October 10, 2026 (America/Lima); public evidence is in `devnet-migration-smoke.json`. Run `npm run smoke:migration:devnet` to repeat with a fresh disposable owner; this briefly pauses registration and restores the original pause state. Follow the [audit and migration procedure](../docs/alias-claim-migration.md).
+
+## Custom booking escrow
+
+A separate `vynx-booking` program now implements devnet USDC custody, permanent booking receipts, quote-bound atomic funding, disputes, refunds, one-time allocations and bounded resolver-outage recovery. It is deployed and initialized on devnet at `B6FdE4aAcavkyh1u7UXadQXTQrGYmGWpPqKbfQ6sX7mY`; its on-chain bytes match the tested local binary. It is unaudited and cannot enable production checkout. Live 0.01 devnet USDC funding and full refund were verified using the user-authorized test wallet; deployment, initialization and negative smoke evidence are in `booking-devnet-*.json`. See [implementation, trust boundaries and setup](../docs/custom-booking-escrow.md). Build its SBF binary before running the expanded chain test suite.

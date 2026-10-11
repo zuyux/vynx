@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import BookedCalls from './BookedCalls';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Sidebar } from '@/components/Sidebar';
 import { useWalletSession } from '@/components/WalletSessionProvider';
@@ -73,7 +74,8 @@ export default function CallOfferWorkspace() {
   return <div className="min-h-screen bg-[#08080b] text-white"><Sidebar /><main id="main-content" tabIndex={-1} className="mx-auto max-w-5xl px-5 py-8 sm:px-8 lg:ml-64 lg:px-12">
     <Link href="/dashboard/card" className="text-sm text-violet-300 underline">Volver a Mi página</Link>
     <h1 className="mt-5 text-3xl font-semibold">Mi servicio de videollamada</h1><p className="mt-3 text-sm leading-7 text-zinc-300">Define tu servicio, duración, precio y horarios. Puedes guardar un servicio por wallet y actualizarlo cuando quieras.</p>
-    <p className="mt-5 rounded-xl border border-violet-400/30 bg-violet-400/10 p-4 text-sm leading-7 text-violet-200">Tu configuración se guarda en tu cuenta. La selección de turnos, las reservas, los enlaces de llamada y el cobro de sesiones todavía no están disponibles.</p>
+    <p className="mt-5 rounded-xl border border-violet-400/30 bg-violet-400/10 p-4 text-sm leading-7 text-violet-200">Las reservas confirmadas incluyen un enlace privado para el creador y el fan. El pago utiliza USDC de prueba en Solana devnet.</p>
+    <BookedCalls key={wallet} />
     {!loaded ? <LoadingState label="Cargando tu servicio…" /> : loaded.error ? <div className="mt-6"><p role="alert" className="text-red-300">{loaded.error}</p><button onClick={() => { setSnapshot(null); setRetry(value => value + 1); }} className={`${button} mt-4`}>Reintentar carga</button></div> : <OfferEditor key={wallet} owner={wallet} offer={loaded.offer} onSaved={offer => setSnapshot({ wallet, offer, error: '' })} />}
   </main></div>;
 }

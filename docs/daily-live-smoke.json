@@ -1,0 +1,24 @@
+{
+  "tested_at": "2026-10-11T20:13:22.859Z",
+  "scope": "live Daily; synthetic booking and server sessions; no escrow payment",
+  "private_room_verified": true,
+  "application_tokens_issued": 2,
+  "authenticated_events": 6,
+  "event_types": [
+    "meeting.ended",
+    "meeting.started",
+    "participant.joined",
+    "participant.left"
+  ],
+  "attendance": {
+    "creator_seconds": 7.858000040054321,
+    "fan_seconds": 5.107000112533569,
+    "simultaneous_seconds": 5.0980000495910645,
+    "scheduled_seconds": 900,
+    "evidence_status": "webhook_evidence",
+    "gaps": [],
+    "settlement_eligible": false
+  },
+  "recording_enabled": false,
+  "fixtures_cleaned": true
+}

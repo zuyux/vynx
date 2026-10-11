@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "setup:daily": "node scripts/setup-daily.mjs",
     "setup:monitoring": "node scripts/setup-error-monitoring.mjs",
     "alerts:dispatch": "node scripts/dispatch-error-alerts.mjs",
     "test:monitoring:db": "node scripts/test-error-monitoring-db.mjs",
@@ -26,6 +27,7 @@
     "test:browsers": "E2E_CROSS_BROWSER=1 node e2e/run.mjs"
   },
   "dependencies": {
+    "@daily-co/daily-js": "^0.93.0",
     "@phantom/browser-sdk": "^2.0.2",
     "@phantom/react-sdk": "^2.0.2",
     "@shadcn/ui": "^0.0.4",

@@ -149,3 +149,5 @@ Public creator links also support devnet SOL tips through `/api/actions/tip/:ali
 Creator video-call offer setup and payment dependencies: [call offers](docs/call-offers.md).
 
 AI-first dispute resolution and video-provider prototype: [feature specification](docs/ai-dispute-resolution-spec.md).
+
+Daily operating funds and automatic billing: [treasury specification](docs/daily-operating-treasury-spec.md).
