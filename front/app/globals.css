@@ -174,3 +174,29 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Keep keyboard focus visible on both light and dark surfaces. */
+:where(a[href], button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 3px solid #7c3aed;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px white;
+}
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 10000;
+  padding: 12px 18px;
+  background: white;
+  color: #18181b;
+  border-radius: 8px;
+  transform: translateY(-200%);
+}
+.skip-link:focus { transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

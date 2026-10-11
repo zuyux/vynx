@@ -1,4 +1,5 @@
 import { CLAIM_PRICE_SOL } from './alias-network';
+import { userErrorMessage } from './user-facing-error';
 
 export type ClaimStage = 'sign-in' | 'prepare' | 'send' | 'verify';
 
@@ -6,7 +7,15 @@ export function claimErrorMessage(reason: unknown, stage: ClaimStage, paymentSen
   const error = reason && typeof reason === 'object' ? reason as { code?: unknown; message?: unknown } : {};
   const code = error.code;
   const message = typeof error.message === 'string' ? error.message : typeof reason === 'string' ? reason : '';
-  if (code === 'WALLET_DEVNET_UNAVAILABLE' || code === 'PRICE_CHANGED' || code === 'QUOTE_EXPIRED' || code === 'REGISTRATION_PENDING' || code === 'REGISTRY_MIGRATION_REQUIRED' || code === 'SPONSOR_UNAVAILABLE') return message;
+  const guidance: Record<string, string> = {
+    WALLET_DEVNET_UNAVAILABLE: 'Connect your wallet on Solana devnet, then try again.',
+    PRICE_CHANGED: 'The alias price changed. Refresh the price before approving a payment.',
+    QUOTE_EXPIRED: 'Your quote expired. Refresh the price and try again.',
+    REGISTRATION_PENDING: 'A registration is still pending. Verify it before making another payment.',
+    REGISTRY_MIGRATION_REQUIRED: 'Your existing alias needs an update. Contact support before claiming another alias.',
+    SPONSOR_UNAVAILABLE: 'Registration is temporarily unavailable. Please try again shortly.',
+  };
+  if (typeof code === 'string' && guidance[code]) return paymentSent ? `${guidance[code]} Keep your payment signature; retry verification instead of paying again.` : guidance[code];
   const receipt = 'Keep your payment signature. Retry verification instead of paying again.';
   if (code === 'ALIAS_TAKEN') return paymentSent
     ? 'This alias was claimed before your payment could be registered. Keep your payment signature and contact support before making another payment.'
@@ -33,5 +42,5 @@ export function claimErrorMessage(reason: unknown, stage: ClaimStage, paymentSen
   if (stage === 'send') return 'Phantom did not return a payment result. Check your wallet activity before trying again; the transaction may have been sent.';
   if (code === 'RPC_TIMEOUT' || /timed? out|timeout/i.test(message)) return 'Solana devnet did not respond in time. Wait a moment, then try again.';
   if (code === 'RPC_UNAVAILABLE') return 'Solana devnet is temporarily unavailable. Wait a moment, then try again.';
-  return message || 'Unable to claim your alias. Please try again.';
+  return userErrorMessage(reason, 'Unable to claim your alias. Please try again.');
 }

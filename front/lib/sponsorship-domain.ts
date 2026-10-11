@@ -1,3 +1,4 @@
+import { UserFacingError } from './user-facing-error';
 export type SponsorProfile = {
   wallet: string; alias: string; display_name: string; bio: string; website: string;
   price_cents: number; duration_days: number; accepting: boolean;
@@ -14,7 +15,7 @@ export type SponsorPayload = Record<string, unknown>;
 
 export function text(value: unknown, max: number, required = true): string {
   if (typeof value !== 'string' || value.trim().length > max || (required && !value.trim())) {
-    throw new Error('Revisa los campos obligatorios y su longitud.');
+    throw new UserFacingError('Revisa los campos obligatorios y su longitud.');
   }
   return value.trim();
 }
@@ -26,17 +27,17 @@ export function httpsUrl(value: unknown, required = true): string {
     const url = new URL(input);
     if (url.protocol !== 'https:' || url.username || url.password) throw new Error();
     return url.href;
-  } catch { throw new Error('Usa un enlace HTTPS válido, sin credenciales.'); }
+  } catch { throw new UserFacingError('Usa un enlace HTTPS válido, sin credenciales.'); }
 }
 
 export function profileFields(data: SponsorPayload) {
   const alias = text(data.alias, 30).toLowerCase();
-  if (!/^[a-z0-9_]{1,30}$/.test(alias)) throw new Error('El alias requiere 1–30 letras, números o guiones bajos.');
+  if (!/^[a-z0-9_]{1,30}$/.test(alias)) throw new UserFacingError('El alias requiere 1–30 letras, números o guiones bajos.');
   const price = Number(data.price_cents);
   const days = Number(data.duration_days);
-  if (!Number.isSafeInteger(price) || price < 100 || price > 1000000) throw new Error('El precio debe estar entre 1 y 10.000 USDC.');
-  if (![7, 14, 30].includes(days)) throw new Error('Selecciona 7, 14 o 30 días.');
-  if (typeof data.accepting !== 'boolean') throw new Error('Estado de oferta inválido.');
+  if (!Number.isSafeInteger(price) || price < 100 || price > 1000000) throw new UserFacingError('El precio debe estar entre 1 y 10.000 USDC.');
+  if (![7, 14, 30].includes(days)) throw new UserFacingError('Selecciona 7, 14 o 30 días.');
+  if (typeof data.accepting !== 'boolean') throw new UserFacingError('Estado de oferta inválido.');
   return { alias, display_name: text(data.display_name, 60), bio: text(data.bio, 280, false),
     website: httpsUrl(data.website, false), price_cents: price, duration_days: days, accepting: data.accepting };
 }

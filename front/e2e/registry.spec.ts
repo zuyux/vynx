@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect } from './test';
 import { createClient } from '@supabase/supabase-js';
 import { randomBytes, randomUUID } from 'node:crypto';
 import bs58 from 'bs58';
@@ -20,10 +21,12 @@ async function submit(payment: { transaction: string }, owner: Keypair) {
 }
 const confirm = (page: Page, owner: Keypair, alias: string, signature: string) => page.request.post(`/api/actions/claim-alias/confirm?alias=${alias}`, { headers: { origin }, data: { account: owner.publicKey.toBase58(), signature } });
 
-test('browser registers a one-character alias with sponsorship, publishes and recovers confirmation', async ({ browser }) => {
+test('browser registers a one-character alias with sponsorship, publishes and recovers confirmation', async ({ browser }, testInfo) => {
+  // Separate names for projects sharing the same isolated chain fixture.
+  const alias = 'pqrst'[testInfo.config.projects.findIndex(project => project.name === testInfo.project.name)] || 'q';
   const context = await browser.newContext(); const owner = await installWallet(context); const page = await context.newPage();
   await signIn(page, '/dashboard/card'); await expect(page).toHaveURL(/profile\/buy-alias/);
-  await page.getByLabel('Alias', { exact: true }).fill('q');
+  await page.getByLabel('Alias', { exact: true }).fill(alias);
   await expect(page.getByRole('button', { name: 'Claim alias — 0.92 SOL' })).toBeEnabled();
   await expect(page.getByText(/VYNX pays network fees/)).toBeVisible();
   await page.getByRole('button', { name: 'Claim alias — 0.92 SOL' }).click();
@@ -33,8 +36,8 @@ test('browser registers a one-character alias with sponsorship, publishes and re
   await expect(page.getByRole('status').filter({ hasText: /Diseño publicado/ })).toBeVisible();
   const { data, error } = await db().from('cards_users').select('*').eq('wallet_address', owner.publicKey.toBase58()).single();
   expect(error).toBeNull(); expect(data.claim_lamports).toBe(920000000); expect(data.claim_program).toBe('AxQxAgndT6ziUr3FBNafhJzF4PpniGpMX4fVRXXmh5y8'); expect(data.claim_alias_pda).toBeTruthy(); expect(data.claim_owner_pda).toBeTruthy();
-  expect((await confirm(page, owner, 'q', data.tx_signature)).status()).toBe(200);
-  await page.goto('/q'); await expect(page.getByRole('heading', { name: 'Registry creator' })).toBeVisible();
+  expect((await confirm(page, owner, alias, data.tx_signature)).status()).toBe(200);
+  await page.goto(`/${alias}`); await expect(page.getByRole('heading', { name: 'Registry creator' })).toBeVisible();
   await context.close();
 });
 

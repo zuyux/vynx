@@ -6,7 +6,7 @@ import { StudioMemberships, StudioTickets } from "@/components/StudioMemberships
 import styles from "@/app/dashboard/studio/studio.module.css";
 export default function CreatorProductsPage() {
   const [type,setType]=useState("tickets");
-  return <div className={styles.shell}><Sidebar/><main className={styles.main}>
+  return <div className={styles.shell}><Sidebar/><main id="main-content" tabIndex={-1} className={styles.main}>
     <header className={styles.top}><span>VYNX / PRODUCTOS DEL CREADOR</span><Link href="/dashboard/card" className={styles.demo}>Volver a Mi página ↗</Link></header>
     <div className={styles.heading}><div><p className={styles.eyebrow}>LAS OFERTAS DE TU PERFIL</p><h1>Mis productos</h1><p>Prepara experiencias y membresías para tu comunidad.</p></div></div>
     <nav className={styles.tabs} aria-label="Tipos de producto"><button aria-pressed={type==="tickets"} onClick={()=>setType("tickets")}>Tickets NFT</button><button aria-pressed={type==="subscriptions"} onClick={()=>setType("subscriptions")}>Suscripciones</button></nav>

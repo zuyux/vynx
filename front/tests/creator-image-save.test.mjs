@@ -20,6 +20,7 @@ test('profile image saves enforce authorization, validate bytes, persist URLs an
   globalThis.fetch = async (input, init) => {
     const req = new Request(input, init); const url = new URL(req.url); calls.push({ path: url.pathname, method: req.method, params: url.searchParams });
     if (url.pathname.endsWith('/creator_image_cleanup')) return json(req.method === 'GET' ? [] : null);
+    if (url.pathname.endsWith('/rpc/consume_public_endpoint_limit')) return json({ allowed: true, retry_after: 60 });
     if (url.pathname.endsWith('/wallet_sessions')) return json([{ wallet }]);
     if (url.pathname.endsWith('/cards_users') && req.method === 'GET') return json([mode === 'committed' && stored ? { ...owner, avatar_url: stored.avatar } : owner]);
     if (url.pathname.startsWith('/storage/v1/object/')) {

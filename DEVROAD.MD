@@ -228,8 +228,8 @@ Goal: complete the first creator monetization loop.
 - [x] **P0** Record payer, creator, amount, signature, cluster, status, and timestamps.
 - [x] **P1** Show pending, confirmed, rejected, and failed states to the fan.
 - [x] **P1** Display real tip totals and recent tip activity in the creator dashboard.
-- [ ] **P1** Add a Solana Action/Blink endpoint for public tip links.
-- [ ] **P1** Add privacy controls for whether payer addresses appear in creator activity.
+- [x] **P1** Add a Solana Action/Blink endpoint for public tip links.
+- [x] **P1** Add privacy controls for whether payer addresses appear in creator activity.
 
 Acceptance criteria:
 
@@ -254,15 +254,15 @@ Goal: make the complete prototype safe enough for invited users.
   - send tip
   - confirm dashboard activity
 - [x] **P0** Add negative end-to-end coverage for taken aliases and failed/cancelled transactions.
-- [ ] **P0** Rate-limit public mutation and payment endpoints.
-- [ ] **P0** Add structured server logs without secrets or full sensitive payloads.
-- [ ] **P0** Add error monitoring and alerts for failed payment verification and API 5xx responses.
-- [ ] **P0** Review Supabase RLS, service-role usage, CORS, session cookies, and public data exposure.
+- [x] **P0** Rate-limit public mutation and payment endpoints.
+- [x] **P0** Add structured server logs without secrets or full sensitive payloads.
+- [x] **P0** Add error monitoring and alerts for failed payment verification and API 5xx responses.
+- [x] **P0** Review Supabase RLS, service-role usage, CORS, session cookies, and public data exposure.
 - [ ] **P0** Confirm all production environment variables and URLs.
-- [ ] **P1** Add user-facing Terms, Privacy, fee disclosure, network disclosure, and support contact.
+- [x] **P1** Add user-facing Terms, Privacy, fee disclosure, network disclosure, and support contact.
 - [ ] **P1** Add database backup/restore notes and rollback instructions.
-- [ ] **P1** Test current Chrome, Safari, Firefox, and mobile viewport behavior.
-- [ ] **P1** Run a small invited-user test and record blocking feedback.
+- [ ] **P1** Test current Chrome, Safari, Firefox, and mobile viewport behavior. 70 automated desktop/mobile scenarios verified, plus installed Firefox 157 smoke checks; actual Safari/macOS/iOS and wallet handoff remain pending. See `front/docs/browser-compatibility.md`.
+- [ ] **P1** Run a small invited-user test and record blocking feedback. Test kit prepared in `docs/invited-user-test/`; study suspended at the user’s request.
 
 Acceptance criteria:
 
@@ -279,9 +279,9 @@ Goal: let creators sell their time and expertise while fans can assess prior com
 
 Start after the full alias-to-tip MVP passes end-to-end tests. The first version supports one video-call offer per creator.
 
-- [ ] **P2** Let creators define the service offered, duration, price, availability, and booking timezone.
+- [x] **P2** Let creators define the service offered, duration, price, availability, and booking timezone. (Private persistent configuration; migration 013 required.)
 - [ ] **P2** Let fans choose a slot and pay before the call; verify payment server-side and prevent duplicate payments or double-booked slots.
-- [ ] **P2** Select the payment custody and settlement mechanism; evaluate holding funds until completion and define release, refund, and dispute rules before implementation.
+- [ ] **P2** Select the payment custody and settlement mechanism; evaluate holding funds until completion and define release, refund, and dispute rules before implementation. (Audited escrow selected; [provider evaluation and proposed policy](docs/booking-escrow-evaluation.md); provider not yet qualified.)
 - [ ] **P2** Provide a private video-call link to the booked participants and select a video provider with verifiable attendance and duration events.
 - [ ] **P2** Track booking states, including awaiting payment, confirmed, completed, cancelled, no-show, and disputed; verify provider events server-side and process them idempotently.
 - [ ] **P2** Define completion criteria using both participants' attendance and session duration. Keep verified completion separate from satisfaction or performance ratings.

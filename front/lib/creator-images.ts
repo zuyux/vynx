@@ -1,3 +1,4 @@
+import { serverLog } from './server-log';
 import { trackCreatorImageUpload, cleanupAfterCreatorSave } from './creator-image-cleanup';
 import { randomUUID } from 'node:crypto';
 import sharp from 'sharp';
@@ -55,5 +56,5 @@ export async function removeUncommittedImages(db: SupabaseClient, paths: string[
       wallets.add(wallet);
     }
     for (const wallet of wallets) await cleanupAfterCreatorSave(db, wallet);
-  } catch { console.error(JSON.stringify({ event: 'creator_image_rollback_deferred', count: paths.length })); }
+  } catch { serverLog('creator_image_rollback_deferred', { count: paths.length }); }
 }

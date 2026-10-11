@@ -7,7 +7,7 @@ export default function CreatorCommerceWorkspace({ kind }: { kind: "tickets" | "
   const tickets = kind === "tickets";
   return <div className={styles.shell}>
     <Sidebar />
-    <main className={styles.main}>
+    <main id="main-content" tabIndex={-1} className={styles.main}>
       <header className={styles.top}><span>VYNX / PANEL DEL CREADOR</span><Link href="/dashboard/card" className={styles.demo}>Editar mi perfil ↗</Link></header>
       <div className={styles.heading}><div>
         <p className={styles.eyebrow}>{tickets ? "EXPERIENCIAS Y BENEFICIOS" : "TU COMUNIDAD, MÁS CERCA"}</p>

@@ -1,3 +1,4 @@
+import { serverLog } from './server-log';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { CREATOR_IMAGE_BUCKET, ownedCreatorImagePath } from './creator-image-policy';
 import { ApiError } from './wallet-session';
@@ -43,8 +44,8 @@ export async function processCreatorImageCleanup(db: SupabaseClient, options: { 
 export async function cleanupAfterCreatorSave(db: SupabaseClient, wallet: string) {
   try {
     const result = await processCreatorImageCleanup(db, { wallet, limit: 4 });
-    if (result.failed || result.blocked) console.error(JSON.stringify({ event: 'creator_image_cleanup_pending', ...result }));
-  } catch { console.error(JSON.stringify({ event: 'creator_image_cleanup_pending' })); }
+    if (result.failed || result.blocked) serverLog('creator_image_cleanup_pending', result);
+  } catch { serverLog('creator_image_cleanup_pending'); }
 }
 
 // Optional operator backfill for objects created before upload manifests existed.

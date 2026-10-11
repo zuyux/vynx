@@ -1,4 +1,5 @@
 'use client';
+import { userErrorMessage } from '@/lib/user-facing-error';
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -12,13 +13,13 @@ export default function SponsorshipWalletControl({ fullWidthOnMobile = false }: 
   async function logout() {
     setBusy(true); setError('');
     try { await session.logout(); router.replace('/'); router.refresh(); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to disconnect. Retry.'); }
+    catch (reason) { setError(userErrorMessage(reason, 'Unable to disconnect. Retry.')); }
     finally { setBusy(false); }
   }
   async function login() {
     setBusy(true); setError('');
     try { await session.authenticate(); router.refresh(); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to sign in. Retry.'); }
+    catch (reason) { setError(userErrorMessage(reason, 'Unable to sign in. Retry.')); }
     finally { setBusy(false); }
   }
   const wallet = session.wallet || session.connectedWallet;

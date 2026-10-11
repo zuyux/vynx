@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import { LegalLinks } from '@/components/LegalLinks';
 import { SITE_TITLE, SITE_DESCRIPTION, siteUrl } from '@/lib/seo';
 
 
@@ -48,13 +49,13 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="application-name" content="VYNX" />
         <link rel="manifest" href="/site.webmanifest" />
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className="min-h-full flex flex-col">
+        <a href="#main-content" className="skip-link">Skip to main content</a>
         <Providers>
           {children}
         </Providers>
+        <footer className="border-t border-white/10 bg-[#0A0A0A] px-6 py-6 text-zinc-300"><LegalLinks /></footer>
         <Script id="service-worker" strategy="afterInteractive">
           {process.env.NODE_ENV === "production"
             ? `if ('serviceWorker' in navigator) {

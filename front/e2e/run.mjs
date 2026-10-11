@@ -66,7 +66,7 @@ try {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
   if (!appReady) throw new Error('Test application did not become ready.');
-  await run(process.execPath, ['node_modules/@playwright/test/cli.js', 'test']);
+  await run(process.execPath, ['node_modules/@playwright/test/cli.js', 'test', ...(process.env.E2E_TEST_PATTERN ? [process.env.E2E_TEST_PATTERN] : []), ...(process.env.E2E_GREP ? ['--grep', process.env.E2E_GREP] : [])]);
 } catch (reason) { console.error(reason.message); process.exitCode = 1; }
 finally {
   application?.kill();

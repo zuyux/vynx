@@ -1,7 +1,7 @@
 {
 	"name": "VYNX",
 	"short_name": "VYNX",
-	"description": "Tu espacio. Tu audiencia. Tus reglas. Plataforma Web3 para creadores en Solana.",
+	"description": "Create your VYNX creator card, share your links, and receive tips on Solana.",
 	"icons": [
 		{ "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
 		{ "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" },
@@ -13,5 +13,5 @@
 	"start_url": "/",
 	"scope": "/",
 	"orientation": "portrait",
-	"lang": "es"
+	"lang": "en"
 }

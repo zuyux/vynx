@@ -54,6 +54,10 @@ export function validateEnvironment(env) {
   }
 
   const appUrl = env.NEXT_PUBLIC_APP_URL?.trim();
+  if (env.NODE_ENV === 'production' && appUrl && isUrl(appUrl)) {
+    const origin = new URL(appUrl);
+    if (origin.protocol !== 'https:' && !['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname)) errors.push('NEXT_PUBLIC_APP_URL must use HTTPS in production (except loopback test servers).');
+  }
   if (appUrl?.endsWith("/")) {
     errors.push("NEXT_PUBLIC_APP_URL must not have a trailing slash.");
   }
@@ -68,10 +72,20 @@ export function validateEnvironment(env) {
   }
 
   const leakedSecret = Object.keys(env).find(
-    (key) => key.startsWith("NEXT_PUBLIC_") && /SUPABASE|SECRET|SERVICE_ROLE|PRIVATE_KEY|KEYPAIR|KORA_API_KEY|KORA_HMAC/.test(key)
+    (key) => key.startsWith("NEXT_PUBLIC_") && /SUPABASE|SECRET|SERVICE_ROLE|PRIVATE_KEY|KEYPAIR|KORA_API_KEY|KORA_HMAC|ERROR_MONITORING|ERROR_ALERT_WEBHOOK/.test(key)
   );
   if (leakedSecret) {
     errors.push(`${leakedSecret} looks like a secret but uses the public NEXT_PUBLIC_ prefix.`);
+  }
+
+  if (env.ERROR_MONITORING_ENABLED && !['true', 'false'].includes(env.ERROR_MONITORING_ENABLED)) errors.push('ERROR_MONITORING_ENABLED must be true or false.');
+  if (env.ERROR_MONITORING_ENABLED === 'true' && (!env.ERROR_MONITORING_TOKEN || env.ERROR_MONITORING_TOKEN.length < 32)) errors.push('ERROR_MONITORING_TOKEN must contain at least 32 characters when monitoring is enabled.');
+  if (env.ERROR_ALERT_WEBHOOK_URL) {
+    try {
+      const url = new URL(env.ERROR_ALERT_WEBHOOK_URL);
+      if (url.protocol !== 'https:' || url.username || url.password) throw new Error('Invalid');
+    } catch { errors.push('ERROR_ALERT_WEBHOOK_URL must be an HTTPS URL without embedded credentials.'); }
+    if (env.ERROR_MONITORING_ENABLED !== 'true') errors.push('Enable ERROR_MONITORING_ENABLED before configuring outbound alerts.');
   }
 
   if (env.VYNX_ALIAS_REGISTRY_ENABLED && !['true', 'false'].includes(env.VYNX_ALIAS_REGISTRY_ENABLED)) errors.push('VYNX_ALIAS_REGISTRY_ENABLED must be true or false.');

@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { appDb } from '@/lib/app-db';
 import { validWalletSignature, walletKey } from '@/lib/sponsorship-server';
+import { UserFacingError } from './user-facing-error';
 
 export const SESSION_COOKIE = 'vynx-session';
 export const NONCE_COOKIE = 'vynx-nonce';
@@ -18,7 +19,11 @@ export function requestCookie(request: Request, name: string) {
   return request.headers.get('cookie')?.split(';').map(value => value.trim()).find(value => value.startsWith(`${name}=`))?.slice(name.length + 1) ?? '';
 }
 export function cookieOptions(maxAge = SESSION_SECONDS) {
-  return { httpOnly: true, secure: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost').protocol === 'https:', sameSite: 'lax' as const, path: '/', maxAge };
+  const origin = new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost');
+  if (process.env.NODE_ENV === 'production' && origin.protocol !== 'https:' && !['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname)) {
+    throw new ApiError('Production sessions require HTTPS.', 503);
+  }
+  return { httpOnly: true, secure: origin.protocol === 'https:', sameSite: 'lax' as const, path: '/', maxAge };
 }
 export async function readSession(token: string) {
   if (!/^[a-f0-9]{64}$/.test(token)) return null;
@@ -60,6 +65,11 @@ export async function verifySignIn(id: string, wallet: string, signature: string
   if (sessionError) throw new ApiError('Unable to create session.', 503);
   return token;
 }
-export function apiFailure(reason: unknown) {
-  return Response.json({ error: reason instanceof Error ? reason.message : 'Request failed.', ...(reason instanceof ApiError && reason.code ? { code: reason.code } : {}) }, { status: reason instanceof ApiError ? reason.status : 400, headers: { 'Cache-Control': 'no-store' } });
+export function apiFailure(reason: unknown, headers: HeadersInit = {}) {
+  const expected = reason instanceof ApiError || reason instanceof UserFacingError;
+  const status = reason instanceof ApiError ? reason.status : expected || reason instanceof SyntaxError ? 400 : 500;
+  const message = expected && status < 500 ? reason.message : status === 400 ? 'Invalid request. Please check your details.' : 'Something went wrong. Please try again shortly.';
+  return Response.json({ error: message, ...(expected && reason.code ? { code: reason.code } : {}) }, {
+    status, headers: { ...Object.fromEntries(new Headers(headers)), 'Cache-Control': 'no-store' },
+  });
 }

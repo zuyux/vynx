@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test';
 import { createClient } from '@supabase/supabase-js';
 import { Keypair } from '@solana/web3.js';
 import { aliasAvailabilityClientHash } from '../lib/alias-availability';

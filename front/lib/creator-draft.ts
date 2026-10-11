@@ -1,3 +1,4 @@
+import { UserFacingError } from './user-facing-error';
 import { storedCreatorImage } from './creator-image-policy';
 
 export type CreatorLink = { id: string; title: string; url: string };
@@ -36,7 +37,7 @@ export function readDraft(raw: string | null): CreatorDraft {
       !value.links.every((link: CreatorLink) => link && bounded(link.id, 60) && bounded(link.title, 60) && bounded(link.url, 500)) ||
       new Set(value.links.map((link: CreatorLink) => link.id)).size !== value.links.length ||
       !value.socials || !['instagram', 'youtube', 'x'].every(key => bounded(value.socials[key], 500))) {
-    throw new Error('El borrador guardado no es compatible. Puedes crear uno nuevo.');
+    throw new UserFacingError('El borrador guardado no es compatible. Puedes crear uno nuevo.');
   }
   // Return only supported fields; never persist arbitrary client properties.
   return { version: 1, alias: value.alias, name: value.name, bio: value.bio,

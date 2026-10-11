@@ -6,6 +6,9 @@ export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [{ url: siteUrl(), changeFrequency: 'weekly', priority: 1 }];
+  for (const path of ['/help/terms', '/help/privacy', '/help/fees', '/help/network', '/support']) {
+    entries.push({ url: siteUrl(path), changeFrequency: 'monthly', priority: 0.3 });
+  }
   // Supabase returns at most 1,000 rows by default. Page through the full list.
   for (let offset = 0; ; offset += 1000) {
     const { creators, hasMore } = await publishedCreatorBatch(offset, 1000);

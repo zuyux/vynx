@@ -4,7 +4,8 @@ import { validateEnvironment } from "./env-validation.mjs";
 const { loadEnvConfig } = nextEnv;
 loadEnvConfig(process.cwd());
 
-const errors = validateEnvironment(process.env);
+const production = process.env.NODE_ENV === 'production' || ['prebuild', 'prestart'].includes(process.env.npm_lifecycle_event);
+const errors = validateEnvironment({ ...process.env, ...(production ? { NODE_ENV: 'production' } : {}) });
 
 if (errors.length > 0) {
   console.error("\nVYNX configuration is invalid:\n");

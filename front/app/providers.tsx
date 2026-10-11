@@ -1,5 +1,6 @@
 "use client";
 
+import { MotionConfig } from "framer-motion";
 import { useLayoutEffect } from "react";
 import { PhantomProvider, darkTheme, type PhantomSDKConfig } from "@phantom/react-sdk";
 import { AddressType } from "@phantom/browser-sdk";
@@ -35,7 +36,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       theme={darkTheme}
       appName="VYNX"
     >
-      <WalletSessionProvider>{children}</WalletSessionProvider>
+      <MotionConfig reducedMotion="user"><WalletSessionProvider>{children}</WalletSessionProvider></MotionConfig>
     </PhantomProvider>
   );
 }

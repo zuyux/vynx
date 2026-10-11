@@ -1,4 +1,5 @@
 "use client";
+import { userErrorMessage, responseError } from '@/lib/user-facing-error';
 
 import Image from "next/image";
 import Link from "next/link";
@@ -43,6 +44,7 @@ export default function HomePage({ children }: { children?: ReactNode }) {
   const router = useRouter();
   const session = useWalletSession();
   const reduceMotion = useReducedMotion();
+  const reveal = reduceMotion ? { initial: false as const } : sectionReveal;
   const { isConnected, isLoading } = usePhantom();
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [disconnectError, setDisconnectError] = useState('');
@@ -82,11 +84,11 @@ export default function HomePage({ children }: { children?: ReactNode }) {
       if (alias) {
         const response = await fetch('/api/auth/session', { cache: 'no-store' });
         const result = await response.json();
-        if (!response.ok) throw new Error(result.error);
+        if (!response.ok) throw responseError(response, result, 'Unable to complete the request. Please retry.');
         router.push(result.alias ? `/${encodeURIComponent(result.alias)}` : `/profile/buy-alias?${new URLSearchParams({ alias, next: '/dashboard/card' })}`);
         router.refresh();
       }
-    } catch (reason) { setDisconnectError(reason instanceof Error ? reason.message : 'Unable to sign in. Retry.'); }
+    } catch (reason) { setDisconnectError(userErrorMessage(reason, 'Unable to sign in. Retry.')); }
     finally { setIsDisconnecting(false); }
   };
 
@@ -94,18 +96,18 @@ export default function HomePage({ children }: { children?: ReactNode }) {
     setIsDisconnecting(true); setDisconnectError('');
     try {
       await session.logout();
-    } catch (reason) { setDisconnectError(reason instanceof Error ? reason.message : 'Unable to disconnect.'); }
+    } catch (reason) { setDisconnectError(userErrorMessage(reason, 'Unable to disconnect.')); }
     finally { setIsDisconnecting(false); }
   };
 
   const focusAlias = () => {
     const aliasInput = document.getElementById("alias");
-    aliasInput?.scrollIntoView({ behavior: "smooth", block: "center" });
+    aliasInput?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
     aliasInput?.focus({ preventScroll: true });
   };
 
   return (
-    <main className="landing-page min-h-screen overflow-hidden bg-[#080808] text-white selection:bg-[#f5f5f5] selection:text-black">
+    <main id="main-content" tabIndex={-1} className="landing-page min-h-screen overflow-hidden bg-[#080808] text-white selection:bg-[#f5f5f5] selection:text-black">
       <nav className="absolute inset-x-0 top-0 z-40 px-5 py-5 sm:px-8 lg:px-12">
         <div className="mx-auto flex max-w-[1480px] items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3 backdrop-blur-xl sm:px-6">
           <a href="#top" aria-label="VYNX home" className="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
@@ -152,7 +154,7 @@ export default function HomePage({ children }: { children?: ReactNode }) {
               const alias = (event.currentTarget.elements.namedItem("alias") as HTMLInputElement)?.value.trim();
               if (alias) void handleSignIn(alias);
             }}>
-              <div className="flex min-w-0 flex-1 items-center px-4"><span className="mr-2 text-xl font-bold text-white/30">@</span><input id="alias" name="alias" type="text" required minLength={1} maxLength={30} placeholder="youralias" autoComplete="off" aria-label="Claim your alias" className="h-14 min-w-0 flex-1 rounded-md bg-transparent text-lg font-medium text-white outline-none placeholder:text-white/40 focus-visible:ring-1 focus-visible:ring-white/50" /></div>
+              <div className="flex min-w-0 flex-1 items-center px-4"><span className="mr-2 text-xl font-bold text-white/30">@</span><input id="alias" name="alias" type="text" required minLength={1} maxLength={30} placeholder="youralias" autoComplete="off" aria-label="Claim your alias" className="h-14 min-w-0 flex-1 rounded-md bg-transparent text-lg font-medium text-white outline-none placeholder:text-white/60 focus-visible:ring-1 focus-visible:ring-white/50" /></div>
               <Button type="submit" className="h-14 rounded-xl bg-[#f5f5f5] px-8 text-sm font-black tracking-wide text-black transition hover:scale-[1.02] hover:bg-neutral-200">CLAIM YOUR CARD →</Button>
             </form>
             <div className="mt-7 flex flex-wrap gap-x-7 gap-y-3 text-sm font-medium text-white/55 sm:text-base">
@@ -162,33 +164,33 @@ export default function HomePage({ children }: { children?: ReactNode }) {
             </div>
           </motion.div>
 
-          <motion.div className="relative mx-auto w-full max-w-[620px] lg:justify-self-end" initial={{ opacity: 0, scale: 0.86, rotate: 3 }} animate={{ opacity: 1, scale: 1, rotate: 0, y: [0, -14, 0] }} transition={{ opacity: { duration: 0.8 }, scale: { duration: 0.8 }, rotate: { duration: 0.8 }, y: { duration: 5, repeat: Infinity, ease: "easeInOut" } }} whileHover={{ scale: 1.025, rotate: -1.5 }}>
+          <motion.div className="relative mx-auto w-full max-w-[620px] lg:justify-self-end" initial={reduceMotion ? false : { opacity: 0, scale: 0.86, rotate: 3 }} animate={reduceMotion ? { opacity: 1, scale: 1, rotate: 0, y: 0 } : { opacity: 1, scale: 1, rotate: 0, y: [0, -14, 0] }} transition={{ opacity: { duration: 0.8 }, scale: { duration: 0.8 }, rotate: { duration: 0.8 }, y: { duration: 5, repeat: Infinity, ease: "easeInOut" } }} whileHover={reduceMotion ? undefined : { scale: 1.025, rotate: -1.5 }}>
             <div className="absolute inset-[8%] rounded-[4rem] bg-white/5 blur-[80px]" />
-            <motion.div aria-hidden="true" className="absolute -left-2 top-[19%] z-20 rounded-full border border-white/15 bg-black/55 px-4 py-2 text-xs font-bold text-white/80 shadow-xl backdrop-blur-xl sm:left-2 sm:text-sm" animate={{ x: [0, -8, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>⚡ Paid instantly</motion.div>
+            <motion.div aria-hidden="true" className="absolute -left-2 top-[19%] z-20 rounded-full border border-white/15 bg-black/55 px-4 py-2 text-xs font-bold text-white/80 shadow-xl backdrop-blur-xl sm:left-2 sm:text-sm" animate={reduceMotion ? { x: 0 } : { x: [0, -8, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>⚡ Paid instantly</motion.div>
             <Image src="/hero-card-asset.png" alt="VYNX creator card preview" width={620} height={768} priority className="relative z-10 mx-auto h-auto max-h-[calc(100svh-10rem)] w-auto max-w-full drop-shadow-[0_35px_70px_rgba(0,0,0,0.55)]" />
           </motion.div>
         </div>
       </section>
 
       <section id="how-it-works" className="px-5 py-24 sm:px-8 lg:px-12 lg:py-32"><div className="mx-auto max-w-[1480px]">
-        <motion.div {...sectionReveal} transition={{ duration: 0.6 }} className="mb-14 flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="mb-3 text-sm font-black uppercase tracking-[0.25em] text-[#f5f5f5]">Zero friction</p><h2 className="heading-font max-w-4xl text-4xl leading-[0.95] sm:text-6xl lg:text-7xl">LIVE IN THREE MINUTES.</h2></div><p className="max-w-md text-lg leading-relaxed text-white/55">From wallet to storefront in four simple moves. No code, no gatekeepers.</p></motion.div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{steps.map((step, index) => <motion.article key={step.title} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, delay: index * 0.08 }} whileHover={{ y: -8 }} className="group relative min-h-72 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] p-7 transition-colors hover:border-[#d4d4d4]/60 hover:bg-[#d4d4d4]/10"><span className="absolute right-5 top-3 heading-font text-7xl text-white/[0.035] transition-colors group-hover:text-[#d4d4d4]/15">{step.number}</span><div className="mb-14 flex size-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 transition-transform group-hover:rotate-6 group-hover:scale-110"><Image src={step.icon} alt="" width={28} height={28} /></div><h3 className="heading-font text-2xl leading-tight">{step.title}</h3><p className="mt-3 text-base leading-relaxed text-white/60">{step.desc}</p></motion.article>)}</div>
+        <motion.div {...reveal} transition={{ duration: 0.6 }} className="mb-14 flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="mb-3 text-sm font-black uppercase tracking-[0.25em] text-[#f5f5f5]">Zero friction</p><h2 className="heading-font max-w-4xl text-4xl leading-[0.95] sm:text-6xl lg:text-7xl">LIVE IN THREE MINUTES.</h2></div><p className="max-w-md text-lg leading-relaxed text-white/55">From wallet to storefront in four simple moves. No code, no gatekeepers.</p></motion.div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{steps.map((step, index) => <motion.article key={step.title} initial={reduceMotion ? false : { opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, delay: index * 0.08 }} whileHover={reduceMotion ? undefined : { y: -8 }} className="group relative min-h-72 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] p-7 transition-colors hover:border-[#d4d4d4]/60 hover:bg-[#d4d4d4]/10"><span className="absolute right-5 top-3 heading-font text-7xl text-white/45 transition-colors group-hover:text-white/60">{step.number}</span><div className="mb-14 flex size-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 transition-transform motion-safe:group-hover:rotate-6 motion-safe:group-hover:scale-110"><Image src={step.icon} alt="" width={28} height={28} /></div><h3 className="heading-font text-2xl leading-tight">{step.title}</h3><p className="mt-3 text-base leading-relaxed text-white/60">{step.desc}</p></motion.article>)}</div>
       </div></section>
 
       <section id="creators" className="border-y border-white/8 bg-white/[0.018] px-5 py-24 sm:px-8 lg:px-12 lg:py-32"><div className="mx-auto max-w-[1480px]">
-        <motion.div {...sectionReveal} transition={{ duration: 0.6 }} className="mb-14 text-center"><p className="mb-3 text-sm font-black uppercase tracking-[0.25em] text-[#a3a3a3]">Made for every creator</p><h2 className="heading-font text-4xl leading-[0.95] sm:text-6xl lg:text-7xl">CARDS THAT EARN.</h2></motion.div>
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">{creators.map((creator, index) => <motion.div key={creator.username} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.15 }} transition={{ duration: 0.5, delay: index * 0.08 }} whileHover={{ y: -10 }}><Card className="group overflow-hidden rounded-3xl border-white/10 bg-[#111111] p-0 shadow-2xl transition-colors hover:border-[#f5f5f5]/35"><CardContent className="p-0"><div className="relative aspect-[4/5] overflow-hidden"><Image src={creator.img} alt={creator.username} fill sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw" className="object-cover transition duration-700 group-hover:scale-105" /><div className="absolute inset-0 bg-linear-to-t from-[#111111] via-transparent to-transparent" /><span className="absolute right-4 top-4 rounded-full border border-[#f5f5f5]/45 bg-black/70 px-3 py-1 text-xs font-bold text-[#f5f5f5] shadow-[0_0_18px_rgba(255,255,255,0.04)] backdrop-blur-md">{creator.views} views</span></div><div className="relative -mt-8 p-6 pt-0"><h3 className="heading-font text-2xl text-white">@{creator.username}</h3><p className="mt-1 text-sm text-white/60">{creator.title}</p><div className="mt-5 flex items-end justify-between border-t border-white/10 pt-4"><span className="text-sm text-white/60">{creator.followers} followers</span><span className="text-lg font-black text-[#f5f5f5]">{creator.earned}</span></div></div></CardContent></Card></motion.div>)}</div>
+        <motion.div {...reveal} transition={{ duration: 0.6 }} className="mb-14 text-center"><p className="mb-3 text-sm font-black uppercase tracking-[0.25em] text-[#a3a3a3]">Made for every creator</p><h2 className="heading-font text-4xl leading-[0.95] sm:text-6xl lg:text-7xl">CARDS THAT EARN.</h2></motion.div>
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">{creators.map((creator, index) => <motion.div key={creator.username} initial={reduceMotion ? false : { opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.15 }} transition={{ duration: 0.5, delay: index * 0.08 }} whileHover={reduceMotion ? undefined : { y: -10 }}><Card className="group overflow-hidden rounded-3xl border-white/10 bg-[#111111] p-0 shadow-2xl transition-colors hover:border-[#f5f5f5]/35"><CardContent className="p-0"><div className="relative aspect-[4/5] overflow-hidden"><Image src={creator.img} alt={creator.username} fill sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw" className="object-cover transition duration-700 motion-safe:group-motion-safe:hover:scale-105" /><div className="absolute inset-0 bg-linear-to-t from-[#111111] via-transparent to-transparent" /><span className="absolute right-4 top-4 rounded-full border border-[#f5f5f5]/45 bg-black/70 px-3 py-1 text-xs font-bold text-[#f5f5f5] shadow-[0_0_18px_rgba(255,255,255,0.04)] backdrop-blur-md">{creator.views} views</span></div><div className="relative -mt-8 p-6 pt-0"><h3 className="heading-font text-2xl text-white">@{creator.username}</h3><p className="mt-1 text-sm text-white/60">{creator.title}</p><div className="mt-5 flex items-end justify-between border-t border-white/10 pt-4"><span className="text-sm text-white/60">{creator.followers} followers</span><span className="text-lg font-black text-[#f5f5f5]">{creator.earned}</span></div></div></CardContent></Card></motion.div>)}</div>
       </div></section>
 
       <section id="features" className="px-5 py-24 sm:px-8 lg:px-12 lg:py-32"><div className="mx-auto max-w-[1480px]">
-        <motion.div {...sectionReveal} transition={{ duration: 0.6 }} className="mb-14 max-w-5xl"><p className="mb-3 text-sm font-black uppercase tracking-[0.25em] text-[#f5f5f5]">One link. Every revenue stream.</p><h2 className="heading-font text-4xl leading-[0.95] sm:text-6xl lg:text-7xl">EVERYTHING YOU SELL, IN ONE PLACE.</h2></motion.div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{features.map((feature, index) => <motion.article key={feature.title} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.45, delay: index * 0.06 }} whileHover={{ scale: 1.015 }} className="group flex min-h-56 flex-col justify-between rounded-3xl border border-white/10 bg-linear-to-br from-white/[0.055] to-transparent p-7 transition-colors hover:border-[#f5f5f5]/35"><div className="flex size-12 items-center justify-center rounded-xl bg-white/5 transition-colors group-hover:bg-[#f5f5f5]/10"><Image src={feature.icon} alt="" width={27} height={27} /></div><div><h3 className="heading-font text-2xl">{feature.title}</h3><p className="mt-2 max-w-sm leading-relaxed text-white/60">{feature.desc}</p></div></motion.article>)}</div>
+        <motion.div {...reveal} transition={{ duration: 0.6 }} className="mb-14 max-w-5xl"><p className="mb-3 text-sm font-black uppercase tracking-[0.25em] text-[#f5f5f5]">One link. Every revenue stream.</p><h2 className="heading-font text-4xl leading-[0.95] sm:text-6xl lg:text-7xl">EVERYTHING YOU SELL, IN ONE PLACE.</h2></motion.div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{features.map((feature, index) => <motion.article key={feature.title} initial={reduceMotion ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.45, delay: index * 0.06 }} whileHover={reduceMotion ? undefined : { scale: 1.015 }} className="group flex min-h-56 flex-col justify-between rounded-3xl border border-white/10 bg-linear-to-br from-white/[0.055] to-transparent p-7 transition-colors hover:border-[#f5f5f5]/35"><div className="flex size-12 items-center justify-center rounded-xl bg-white/5 transition-colors group-hover:bg-[#f5f5f5]/10"><Image src={feature.icon} alt="" width={27} height={27} /></div><div><h3 className="heading-font text-2xl">{feature.title}</h3><p className="mt-2 max-w-sm leading-relaxed text-white/60">{feature.desc}</p></div></motion.article>)}</div>
       </div></section>
 
-      <section className="px-5 pb-8 sm:px-8 lg:px-12"><motion.div {...sectionReveal} transition={{ duration: 0.6 }} className="relative mx-auto max-w-[1480px] overflow-hidden rounded-[2rem] border border-white/10 bg-linear-to-r from-[#181818] to-[#0c0c0c] px-7 py-16 text-center sm:px-12 lg:py-24"><div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_100%,rgba(255,255,255,0.04),transparent_45%)]" /><div className="relative"><p className="mb-4 text-sm font-black uppercase tracking-[0.25em] text-[#f5f5f5]">Your audience is waiting</p><h2 className="heading-font mx-auto max-w-5xl text-5xl leading-[0.9] sm:text-7xl lg:text-8xl">OWN YOUR NEXT MOVE.</h2><Button onClick={focusAlias} className="mt-9 h-14 rounded-xl bg-[#f5f5f5] px-9 text-sm font-black tracking-wide text-black hover:scale-105 hover:bg-neutral-200">CLAIM YOUR CARD →</Button></div></motion.div></section>
+      <section className="px-5 pb-8 sm:px-8 lg:px-12"><motion.div {...reveal} transition={{ duration: 0.6 }} className="relative mx-auto max-w-[1480px] overflow-hidden rounded-[2rem] border border-white/10 bg-linear-to-r from-[#181818] to-[#0c0c0c] px-7 py-16 text-center sm:px-12 lg:py-24"><div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_100%,rgba(255,255,255,0.04),transparent_45%)]" /><div className="relative"><p className="mb-4 text-sm font-black uppercase tracking-[0.25em] text-[#f5f5f5]">Your audience is waiting</p><h2 className="heading-font mx-auto max-w-5xl text-5xl leading-[0.9] sm:text-7xl lg:text-8xl">OWN YOUR NEXT MOVE.</h2><Button onClick={focusAlias} className="mt-9 h-14 rounded-xl bg-[#f5f5f5] px-9 text-sm font-black tracking-wide text-black motion-safe:hover:scale-105 hover:bg-neutral-200">CLAIM YOUR CARD →</Button></div></motion.div></section>
 
       {children}
-      <footer className="px-5 py-10 text-sm text-white/40 sm:px-8 lg:px-12"><div className="mx-auto flex max-w-[1480px] flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 sm:flex-row"><span>© {new Date().getFullYear()} VYNX — Your space. Your audience. Your rules.</span><a href="https://github.com/zuyux/vynx" target="_blank" rel="noopener noreferrer" className="font-bold transition-colors hover:text-[#f5f5f5]">GitHub ↗</a></div></footer>
+      <footer className="px-5 py-10 text-sm text-white/60 sm:px-8 lg:px-12"><div className="mx-auto flex max-w-[1480px] flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 sm:flex-row"><span>© {new Date().getFullYear()} VYNX — Your space. Your audience. Your rules.</span><a href="https://github.com/zuyux/vynx" target="_blank" rel="noopener noreferrer" className="font-bold transition-colors hover:text-[#f5f5f5]">GitHub ↗</a></div></footer>
     </main>
   );
 }

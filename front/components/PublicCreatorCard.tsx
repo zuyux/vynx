@@ -1,4 +1,5 @@
 'use client';
+import { UserFacingError, userErrorMessage, responseError } from '@/lib/user-facing-error';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -27,21 +28,21 @@ export function PublicCreatorCard({ creator }: { creator: PublicCreator }) {
   const accent = { mint: '#00F5A0', violet: '#b69aff', rose: '#ff94b9' }[design.accent];
 
   async function saveChange(change: Partial<Pick<CreatorDraft, 'name' | 'bio' | 'avatar'>>) {
-    if (!isOwner || await session.ensureSession() !== creator.wallet) throw new Error('Sign in with the wallet that owns this card.');
+    if (!isOwner || await session.ensureSession() !== creator.wallet) throw new UserFacingError('Sign in with the wallet that owns this card.');
     // Merge only the edited field into the current profile, preserving settings
     // and any changes made in the dashboard since this page was opened.
     const response = await fetch('/api/profile', { cache: 'no-store' });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error);
+    if (!response.ok) throw responseError(response, result, 'Unable to complete the request. Please retry.');
     const profile = result.profile;
-    if (!profile || profile.wallet_address !== creator.wallet || profile.username !== creator.alias) throw new Error('Unable to load the owned card.');
+    if (!profile || profile.wallet_address !== creator.wallet || profile.username !== creator.alias) throw new UserFacingError('Unable to load the owned card.');
     const latest = draftFromProfile({ ...profile, alias: profile.username, display_name: profile.display_name || profile.username, bio: profile.bio || '' });
     const savedResponse = await fetch('/api/profile', {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ design: { ...latest, ...change }, published: profile.published, tips_enabled: profile.tips_enabled }),
     });
     const saved = await savedResponse.json();
-    if (!savedResponse.ok) throw new Error(saved.error);
+    if (!savedResponse.ok) throw responseError(savedResponse, saved, 'Unable to save your card. Your changes are still here.');
     setDesign(saved.profile.design);
     setNotice('Card updated.'); setFailed(false);
   }
@@ -55,7 +56,7 @@ export function PublicCreatorCard({ creator }: { creator: PublicCreator }) {
     if (!editing) return;
     setBusy(true); setNotice('');
     try { await saveChange({ [editing]: text.trim() }); setEditing(null); }
-    catch (reason) { setFailed(true); setNotice(reason instanceof Error ? reason.message : 'Unable to save. Your changes are still here.'); }
+    catch (reason) { setFailed(true); setNotice(userErrorMessage(reason, 'Unable to save. Your changes are still here.')); }
     finally { setBusy(false); }
   }
   async function upload(event: ChangeEvent<HTMLInputElement>) {
@@ -63,16 +64,16 @@ export function PublicCreatorCard({ creator }: { creator: PublicCreator }) {
     if (!file || !isOwner) return;
     setBusy(true); setNotice(''); setFailed(false);
     try {
-      if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 1024 * 1024) throw new Error('Choose a JPG, PNG or WebP image up to 1 MB.');
+      if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 1024 * 1024) throw new UserFacingError('Choose a JPG, PNG or WebP image up to 1 MB.');
       const bitmap = await createImageBitmap(file);
       const tooLarge = bitmap.width > 6000 || bitmap.height > 6000;
       bitmap.close();
-      if (tooLarge) throw new Error('Choose an image up to 6000 pixels per side.');
+      if (tooLarge) throw new UserFacingError('Choose an image up to 6000 pixels per side.');
       const avatar = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(new Error('Unable to read the image.')); reader.readAsDataURL(file);
       });
       await saveChange({ avatar });
-    } catch (reason) { setFailed(true); setNotice(reason instanceof Error ? reason.message : 'Unable to update the portrait.'); }
+    } catch (reason) { setFailed(true); setNotice(userErrorMessage(reason, 'Unable to update the portrait.')); }
     finally { setBusy(false); }
   }
   async function share() {
@@ -88,7 +89,7 @@ export function PublicCreatorCard({ creator }: { creator: PublicCreator }) {
     </label><div className="grid grid-cols-1 gap-2 sm:grid-cols-2"><button disabled={busy} className="min-h-11 rounded-xl bg-violet-400 px-3 py-2 text-sm font-semibold text-black disabled:opacity-50">{busy ? 'Saving…' : 'Save changes'}</button><button type="button" disabled={busy} onClick={() => setEditing(null)} className="min-h-11 rounded-xl border border-white/20 px-3 py-2 text-sm">Cancel</button></div>
   </form>;
 
-  return <main className={`min-h-screen px-4 py-5 sm:px-6 sm:py-7 ${light ? 'bg-[#f5f5f7] text-zinc-900' : 'bg-[#08080b] text-white'}`}>
+  return <main id="main-content" tabIndex={-1} className={`min-h-screen px-4 py-5 sm:px-6 sm:py-7 ${light ? 'bg-[#f5f5f7] text-zinc-900' : 'bg-[#08080b] text-white'}`}>
     <nav aria-label="Page navigation" className="mb-5 flex w-full items-center justify-between gap-4">
       <Link href="/" aria-label="VYNX home" className="flex min-h-11 min-w-11 items-center rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current"><Image src="/logo-white.svg" alt="" width={22} height={16} className={`h-4 w-auto${light ? ' brightness-0' : ''}`} /></Link>
       <Link href="/dashboard" aria-label="My profile" title="My profile" className="flex size-11 items-center justify-center rounded-full border border-current/10 opacity-70 transition hover:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current"><UserRound size={20} aria-hidden="true" /></Link>
@@ -98,7 +99,7 @@ export function PublicCreatorCard({ creator }: { creator: PublicCreator }) {
         {design.avatar ? <Image src={design.avatar} alt={`${design.name} avatar`} fill sizes="(max-width: 492px) calc(100vw - 32px), 460px" priority unoptimized className="-z-20 object-cover object-top" /> : <div className="absolute inset-0 -z-20 flex items-start justify-center bg-[radial-gradient(ellipse_at_top,#643676_0%,#241b30_45%,#17131e_80%)] pt-[18%]"><UserRound size={96} className="text-violet-200/25" aria-hidden="true" /></div>}
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(12,8,18,0.04)_0%,rgba(18,12,25,0.15)_25%,rgba(22,17,30,0.6)_48%,rgba(23,19,30,0.8)_80%)]" />
         <span className="absolute top-5 right-5 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-xs text-violet-100 backdrop-blur-md">@{creator.alias}</span>
-        {isOwner && <><input ref={imageInput} type="file" aria-label="Update card portrait" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={event => void upload(event)} className="sr-only" /><button type="button" disabled={busy} aria-label="Update card image" onClick={() => imageInput.current?.click()} className="group/image absolute inset-x-0 top-0 flex h-[38%] items-end justify-center pb-5 text-xs text-white/80 focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-violet-400 disabled:opacity-50"><span className={`flex items-center gap-2 rounded-full border border-white/20 bg-black/40 px-3 py-2 backdrop-blur-md transition-opacity ${design.avatar && !busy ? 'opacity-0 group-hover/image:opacity-100 group-focus-visible/image:opacity-100' : 'opacity-100'}`}><ImagePlus size={15} aria-hidden="true" />{busy ? 'Saving…' : 'Click to change image'}</span></button></>}
+        {isOwner && <><input ref={imageInput} tabIndex={-1} type="file" aria-label="Update card portrait" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={event => void upload(event)} className="sr-only" /><button type="button" disabled={busy} aria-label="Update card image" onClick={() => imageInput.current?.click()} className="group/image absolute inset-x-0 top-0 flex h-[38%] items-end justify-center pb-5 text-xs text-white/80 focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-violet-400 disabled:opacity-50"><span className={`flex items-center gap-2 rounded-full border border-white/20 bg-black/40 px-3 py-2 backdrop-blur-md transition-opacity ${design.avatar && !busy ? 'opacity-0 group-hover/image:opacity-100 group-focus-visible/image:opacity-100' : 'opacity-100'}`}><ImagePlus size={15} aria-hidden="true" />{busy ? 'Saving…' : 'Click to change image'}</span></button></>}
         <div className="flex flex-1 flex-col justify-end px-5 pt-[60%] pb-5 sm:px-6 sm:pb-6">
           {isOwner && editing === 'name' ? textEditor('name') : <h1 aria-label={design.name} className="break-words text-3xl font-semibold tracking-tight">{isOwner ? <button disabled={busy} onClick={() => edit('name')} aria-label="Edit creator name" className="w-full text-left hover:text-violet-200 focus-visible:outline-2 focus-visible:outline-violet-400">{design.name}<Pencil size={13} className="ml-2 inline opacity-50" aria-hidden="true" /></button> : design.name}</h1>}
           <div className="mt-3">{isOwner && editing === 'bio' ? textEditor('bio') : <p className="whitespace-pre-line break-words text-sm leading-6 text-white/75">{isOwner ? <button disabled={busy} onClick={() => edit('bio')} aria-label="Edit creator bio" className="w-full whitespace-pre-line text-left hover:text-white focus-visible:outline-2 focus-visible:outline-violet-400">{design.bio || 'Click to add your story.'}<Pencil size={12} className="ml-2 inline opacity-50" aria-hidden="true" /></button> : design.bio}</p>}</div>
@@ -118,7 +119,7 @@ export function PublicCreatorCard({ creator }: { creator: PublicCreator }) {
         </div>
       </section>
       {notice && <p role={failed ? 'alert' : 'status'} className={`mt-4 rounded-xl border p-3 text-sm ${failed ? 'border-red-400/30 text-red-400' : 'border-emerald-400/30 text-emerald-500'}`}>{notice}</p>}
-      <footer className={`mt-6 text-center text-[10px] tracking-widest opacity-50 ${creator.published === false ? 'pb-40' : 'pb-16'}`}>VYNX · SOLANA DEVNET</footer>
+      <footer className={`mt-6 text-center text-[10px] tracking-widest opacity-70 ${creator.published === false ? 'pb-40' : 'pb-16'}`}>VYNX · SOLANA DEVNET</footer>
     </div>
     {creator.published === false && <p role="status" className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 right-24 z-40 max-w-[460px] rounded-xl border border-violet-400/25 p-4 text-xs leading-5 shadow-lg backdrop-blur-md sm:left-6 sm:right-26 ${light ? 'bg-white/95 text-zinc-900' : 'bg-[#17131e]/95 text-white'}`}>Your card is unpublished. Only you can view it.</p>}
     {isOwner && <Link href="/dashboard/card" aria-label="Edit my creator card" title="Edit my creator card" className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex size-14 items-center justify-center rounded-full text-black shadow-lg transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet-400 sm:right-6" style={{ background: accent }}><Pencil size={22} aria-hidden="true" /></Link>}

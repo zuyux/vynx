@@ -1,5 +1,8 @@
 'use client';
 
+import { PaymentDisclosure } from '@/components/PaymentDisclosure';
+import { UserFacingError, userErrorMessage, responseError } from '@/lib/user-facing-error';
+
 import { sendDevnetTransaction } from '@/lib/devnet-wallet';
 import { useState, type FormEvent } from 'react';
 import { Transaction } from '@solana/web3.js';
@@ -23,7 +26,7 @@ function WalletTipForm({ alias, creatorWallet, enabled }: { alias: string; creat
   async function post(path: string, payload: unknown) {
     const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const result = await response.json();
-    if (!response.ok) throw Object.assign(new Error(result.error), { code: result.code });
+    if (!response.ok) throw responseError(response, result, 'Unable to complete the request. Please retry.');
     return result;
   }
   async function send(event: FormEvent) {
@@ -33,7 +36,7 @@ function WalletTipForm({ alias, creatorWallet, enabled }: { alias: string; creat
     try {
       if (!session.connectedWallet) { await session.authenticate(); return; }
       await session.ensureSession();
-      if (solana.publicKey !== session.connectedWallet) throw new Error('Reconnect your selected wallet before tipping.');
+      if (solana.publicKey !== session.connectedWallet) throw new UserFacingError('Reconnect your selected wallet before tipping.');
       const key = `vynx:tip:${session.connectedWallet}:${alias}`;
       let recovery = pending;
       try { const saved = localStorage.getItem(key); if (saved) recovery = JSON.parse(saved); } catch { /* Manual signature verification remains available. */ }
@@ -66,13 +69,14 @@ function WalletTipForm({ alias, creatorWallet, enabled }: { alias: string; creat
         setPending(null); sent = false;
         try { localStorage.removeItem(`vynx:tip:${session.connectedWallet}:${alias}`); } catch { /* No transfer occurred in a failed transaction. */ }
       }
-      setFailed(true); setNotice(`${reason instanceof Error ? reason.message : 'Tip failed.'}${sent ? ' Your payment was sent. Retry verification; do not send another transfer.' : ''}`);
+      setFailed(true); setNotice(`${userErrorMessage(reason, 'Tip failed.')}${sent ? ' Your payment was sent. Retry verification; do not send another transfer.' : ''}`);
     } finally { setBusy(false); }
   }
   return <section className="p-6 sm:p-8"><h2 className="text-xl font-semibold">Support this creator</h2><p className="mt-2 text-sm leading-6 opacity-60">Send {currency} directly to the creator’s verified wallet. Solana devnet · test tokens.</p>
     {enabled ? <form onSubmit={event => void send(event)} className="mt-6 space-y-4">
       <div role="group" aria-label="Tip currency" className="flex gap-2">{(['USDC', 'SOL'] as const).map(value => <button type="button" key={value} aria-label={value} disabled={busy || !!pending} aria-pressed={currency === value} onClick={() => { setCurrency(value); setAmount(value === 'USDC' ? '1' : '0.01'); }} className={`min-h-11 flex-1 rounded-xl border px-4 py-2 text-sm ${currency === value ? 'border-violet-400 bg-violet-400/10' : 'border-current/15'}`}>{value}{value === 'USDC' && <span className="ml-2 text-xs opacity-60">Recommended</span>}</button>)}</div>
       <p className="text-xs opacity-60">{currency === 'USDC' ? 'Network fees sponsored · no SOL needed.' : 'Your wallet pays the SOL network fee.'}</p>
+      <PaymentDisclosure />
       <div role="group" aria-label="Tip presets" className="flex flex-wrap gap-2">{(currency === 'USDC' ? ['1', '5', '10'] : ['0.01', '0.05', '0.1']).map(value => <button type="button" key={value} disabled={busy || !!pending} aria-pressed={amount === value} onClick={() => setAmount(value)} className={`min-h-11 rounded-xl border px-4 py-2 text-sm ${amount === value ? 'border-violet-400 bg-violet-400/10' : 'border-current/15'}`}>{value} {currency}</button>)}</div>
       <label className="block text-sm">Tip amount ({currency})<input name="amount" type="number" min={currency === 'USDC' ? '0.01' : '0.00001'} max={currency === 'USDC' ? '1000' : '10'} step={currency === 'USDC' ? '0.000001' : '0.000000001'} required disabled={busy || !!pending} value={amount} onChange={event => setAmount(event.target.value)} className="mt-2 w-full rounded-xl border border-current/15 bg-transparent px-4 py-3 outline-none focus:ring-2 focus:ring-violet-400" /></label>
       <button disabled={busy || session.connectedWallet === creatorWallet} className="w-full rounded-xl bg-violet-400 px-5 py-3 font-semibold text-black disabled:opacity-40">{busy ? 'Processing…' : pending ? 'Verify sent tip' : session.connectedWallet ? `Send ${amount} ${currency} tip` : 'Connect wallet to tip'}</button>
