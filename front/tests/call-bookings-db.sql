@@ -12,8 +12,14 @@ begin
   begin perform public.reserve_call(o,'audit-wallet',slot); raise exception 'Self booking accepted'; exception when raise_exception then if sqlerrm <> 'Offer unavailable' then raise; end if; end;
   begin perform public.reserve_call(o,'fan-two',slot+interval '1 minute'); raise exception 'Off-grid time accepted'; exception when raise_exception then if sqlerrm <> 'Slot outside availability' then raise; end if; end;
   b:=public.prepare_call_payment(booking_id,'fan-one','original',100);
+  begin perform public.prepare_call_payment(booking_id,'outsider','forged',200); raise exception 'Outsider checkout accepted';
+    exception when raise_exception then if sqlerrm <> 'Booking not found' then raise; end if; end;
+  begin perform public.confirm_call_payment(booking_id,'audit-wallet','forged'); raise exception 'Creator payment confirmation accepted';
+    exception when raise_exception then if sqlerrm <> 'Booking unavailable' then raise; end if; end;
+  begin perform public.confirm_call_payment(booking_id,'outsider','forged'); raise exception 'Outsider payment confirmation accepted';
+    exception when raise_exception then if sqlerrm <> 'Booking unavailable' then raise; end if; end;
   again:=public.prepare_call_payment(booking_id,'fan-one','replacement',200);
-  if again->>'transaction' <> 'original' then raise exception 'Checkout retry replaced transaction'; end if;
+  if again->>'transaction' <> 'original' or (again->>'last_valid_block_height')::bigint <> 100 then raise exception 'Checkout retry replaced transaction or block height'; end if;
   update public.call_bookings set expires_at=now()-interval '1 second' where call_bookings.id=booking_id;
   perform public.expire_call_reservation(booking_id,100);
   if (select state from public.call_bookings where call_bookings.id=booking_id) <> 'awaiting_payment' then raise exception 'Live blockhash slot released'; end if;

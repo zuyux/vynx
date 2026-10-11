@@ -28,6 +28,11 @@ test('call API enforces participants, funded booking and time; retries recover o
    if(url.searchParams.has('room_name'))return json([{booking_id:id}]);
    return json(req.headers.get('accept')?.includes('vnd.pgrst.object') ? room : allocated?[room]:[]);
   }
+  if(name==='record_call_video_event'){
+   const event=await req.json();if(writeFail)return jsonError('XX000',500);
+   if(events.has(event.event_id)&&JSON.stringify(events.get(event.event_id))!==JSON.stringify(event))return jsonError('23505',409);
+   events.set(event.event_id,event);return new Response(null,{status:204});
+  }
   if(name==='call_video_events'){
    if(req.method==='POST'){const event=await req.json();if(writeFail)return jsonError('XX000',500);if(events.has(event.event_id))return jsonError('23505',409);events.set(event.event_id,event);return new Response(null,{status:201});}
    const eid=url.searchParams.get('event_id')?.slice(3);return json(eid ? events.get(eid) : [...events.values()]);
@@ -51,6 +56,20 @@ test('call API enforces participants, funded booking and time; retries recover o
   assert.equal((await webhook(delivery(evt))).status,200);assert.equal((await webhook(delivery(evt))).status,200);assert.equal(events.size,1);
   assert.equal((await webhook(delivery({...evt,payload:{...evt.payload,user_id:'creator-id'}}))).status,409);
   const response=await GET(new Request(`${origin}/api/calls?id=${id}`,{headers:{cookie:`vynx-session=${'a'.repeat(64)}`}}));assert.equal(response.status,200);const result=await response.json();assert.equal(result.attendance.evidence_status,'incomplete');assert.doesNotMatch(JSON.stringify(result),/PRIVATE-TOKEN|PRIVATE-KEY|creator-id|fan-id/);
+  assert.equal(result.completion.status,'pending');
+  booking.starts_at=new Date(Date.now()-1200000).toISOString();booking.ends_at=new Date(Date.now()-600000).toISOString();booking.state='completed';
+  const readCompletion=async()=> (await (await GET(new Request(`${origin}/api/calls?id=${id}`,{headers:{cookie:`vynx-session=${'a'.repeat(64)}`}}))).json()).completion;
+  // Payer acknowledgement alone cannot verify attendance.
+  assert.equal((await readCompletion()).status,'review_required');
+  events.clear();const from=Date.parse(booking.starts_at)/1000;
+  const deliveries=[{type:'meeting.ended',payload:{meeting_id:'m',start_ts:from,end_ts:from+600}}];
+  for(const user of ['creator-id','fan-id'])deliveries.push({type:'participant.joined',payload:{user_id:user,session_id:user,joined_at:from}},{type:'participant.left',payload:{user_id:user,session_id:user,joined_at:from,duration:540}});
+  for(const [i,e] of deliveries.entries())assert.equal((await webhook(delivery({...evt,id:`completion-${i}`,type:e.type,payload:{room:room.room_name,...e.payload}}))).status,200);
+  assert.equal((await readCompletion()).status,'verified');
+  // Hitting the fetch limit must invalidate verification before evaluating it.
+  for(let i=events.size;i<1000;i++)events.set(`extra-${i}`,{event_id:`extra-${i}`,event_type:'meeting.ended',event_ts:from+600,payload:{room:room.room_name,meeting_id:'m',start_ts:from,end_ts:from+600}});
+  assert.equal((await readCompletion()).status,'review_required');
+  booking.state='confirmed';booking.starts_at=originalStart;
   const originalEnd=booking.ends_at;booking.ends_at=new Date(Date.now()-3600000).toISOString();assert.equal((await POST(request({id}))).status,410);booking.ends_at=originalEnd;
  } finally {globalThis.fetch=oldFetch;keys.forEach((k,i)=>saved[i]===undefined?delete process.env[k]:process.env[k]=saved[i]);}
 });

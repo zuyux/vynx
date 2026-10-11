@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { Transaction } from '@solana/web3.js';
 import { useWalletSession } from './WalletSessionProvider';
-import { sendDevnetTransaction } from '@/lib/devnet-wallet';
 import { confirmPayment } from '@/lib/payment-client';
 import { UserFacingError, responseError, userErrorMessage } from '@/lib/user-facing-error';
 import { callPrice, type CallOffer } from '@/lib/call-offer';
@@ -80,13 +79,13 @@ export default function CallBookingPanel({ alias }: { alias: string }) {
         localStorage.setItem(key, JSON.stringify({ id: recovery.id, signature }));
         return;
       }
-      if (recovery.sending) throw new UserFacingError("The submission result is uncertain. Retrieve the signature in Phantom and verify the payment before sending again.");
+      if (recovery.sending) throw new UserFacingError("The submission result is uncertain. Retrieve the signature in your wallet and verify the payment before sending again.");
       const result = await post({ action: 'checkout', id: recovery.id });
       if (result.booking.state === 'confirmed') { setBooking(result.booking); return; }
       const transaction = Transaction.from(Uint8Array.from(atob(result.transaction), c => c.charCodeAt(0)));
       // Persist before opening the wallet; never clear this on an ambiguous error.
       localStorage.setItem(key, JSON.stringify({ ...recovery, sending: true }));
-      const { signature } = await sendDevnetTransaction(transaction, wallet);
+      const { signature } = await session.sendTransaction(transaction, wallet);
       recovery = { id: recovery.id, signature, sending: true };
       localStorage.setItem(key, JSON.stringify(recovery));
       setManualSignature(signature);
@@ -105,9 +104,9 @@ export default function CallBookingPanel({ alias }: { alias: string }) {
     <label className="mt-4 block text-sm">Time slot ({schedule.offer.timezone})<select value={slot} disabled={busy || !!booking} onChange={event => setSlot(event.target.value)} className="mt-2 w-full rounded-lg border border-current/20 bg-transparent p-3"><option value="">Select a time slot</option>{schedule.slots.map(value => <option key={value} value={value}>{format(value)} · {value}</option>)}</select></label>
     {!schedule.slots.length && <p className="mt-2 text-sm">No slots are available in the next 14 days.</p>}
     <label className="mt-4 flex gap-2 text-sm"><input type="checkbox" checked={accepted} disabled={busy || !!booking} onChange={event => setAccepted(event.target.checked)} />I accept the devnet escrow terms described above.</label>
-    {booking && <p className="mt-3 text-sm">Booking {booking.id} · {format(booking.starts_at)} · {booking.state === 'confirmed' ? 'Confirmed' : booking.state === 'expired' ? 'Expired' : "Awaiting payment"}</p>}
+    {booking && <p className="mt-3 text-sm">Booking {booking.id} · {format(booking.starts_at)} · {booking.state.replaceAll('_', ' ')}</p>}
     {booking?.state === 'confirmed' && <Link href={`/calls/${booking.id}`} className="mt-4 block rounded-xl border border-violet-400/40 p-4 text-violet-300 underline">Open private call</Link>}
-    {booking?.state !== 'confirmed' && <><label className="mt-4 block text-sm">Signature to recover a submitted payment (optional)<input value={manualSignature} onChange={event => setManualSignature(event.target.value)} disabled={busy} className="mt-2 w-full rounded-lg border border-current/20 bg-transparent p-3" /></label><button type="button" disabled={busy || (!!session.connectedWallet && !booking && (!slot || !accepted))} onClick={() => void checkout()} className="mt-4 rounded-xl bg-violet-400 px-5 py-3 font-semibold text-black disabled:opacity-40">{busy ? 'Verifying…' : !session.connectedWallet ? "Connect wallet to book" : booking ? 'Continue / verify booking' : 'Book and pay into escrow'}</button></>}
+    {(!booking || booking.state === 'awaiting_payment') && <><label className="mt-4 block text-sm">Signature to recover a submitted payment (optional)<input value={manualSignature} onChange={event => setManualSignature(event.target.value)} disabled={busy} className="mt-2 w-full rounded-lg border border-current/20 bg-transparent p-3" /></label><button type="button" disabled={busy || (!!session.connectedWallet && !booking && (!slot || !accepted))} onClick={() => void checkout()} className="mt-4 rounded-xl bg-violet-400 px-5 py-3 font-semibold text-black disabled:opacity-40">{busy ? 'Verifying…' : !session.connectedWallet ? "Connect wallet to book" : booking ? 'Continue / verify booking' : 'Book and pay into escrow'}</button></>}
     {notice && <p role="status" className="mt-4 break-words text-sm">{notice}</p>}
     {(booking?.state === 'confirmed' || booking?.state === 'expired') && <button type="button" disabled={busy} onClick={() => {
       try { localStorage.removeItem(`vynx:booking:v1:${session.wallet}:${alias}`); setBooking(null); setSlot(''); setAccepted(false); setManualSignature(''); setNotice(''); }

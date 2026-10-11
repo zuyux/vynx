@@ -54,7 +54,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <PwaRegistration />
         <a href="#main-content" className="skip-link">Skip to main content</a>
-        <Providers>
+        <Providers privyAppId={process.env.PRIVY_APP_ID?.trim()}>
           {children}
         </Providers>
         <footer className="border-t border-white/10 bg-[#0A0A0A] px-6 py-6 text-zinc-300"><p className="mb-3 text-center text-sm">{SITE_MOTTO}</p><LegalLinks /></footer>

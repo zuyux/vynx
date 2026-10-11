@@ -2,7 +2,7 @@ import { appDb } from '@/lib/app-db';
 import { apiFailure, ApiError, assertOrigin, requireWallet } from '@/lib/wallet-session';
 import { limitPublicEndpoint } from '@/lib/public-rate-limit';
 import { logServerRequest } from '@/lib/server-log';
-import { attendance, assertPrivateRoom, boundedJSON, callWindow, dailyRequest, roomProperties, tokenProperties, type VideoRoom } from '@/lib/daily-video';
+import { attendance, verifiedCompletion, assertPrivateRoom, boundedJSON, callWindow, dailyRequest, roomProperties, tokenProperties, type VideoRoom } from '@/lib/daily-video';
 
 const reply = (body: unknown) => Response.json(body, { headers: { 'Cache-Control': 'no-store' } });
 const columns = 'id,creator_wallet,payer_wallet,starts_at,ends_at,state,payment_signature,terms';
@@ -11,11 +11,11 @@ async function participant(id: unknown, wallet: string) {
   const { data, error } = await appDb().from('call_bookings').select(columns).eq('id', id).maybeSingle();
   if (error) throw new ApiError("Could not load the booking.", 503);
   if (!data || ![data.creator_wallet, data.payer_wallet].includes(wallet)) throw new ApiError('Booking not found.', 404);
-  if (data.state !== 'confirmed' || !data.payment_signature) throw new ApiError("Confirm the booking payment first.", 409);
+  if (!data.payment_signature) throw new ApiError("Confirm the booking payment first.", 409);
   return data;
 }
-function summary(b: { id: string; starts_at: string; ends_at: string; creator_wallet: string; terms: Record<string, unknown> }, wallet: string) {
-  return { id: b.id, starts_at: b.starts_at, ends_at: b.ends_at, title: b.terms.title, role: wallet === b.creator_wallet ? 'creator' : 'fan', call_path: `/calls/${b.id}` };
+function summary(b: { id: string; starts_at: string; ends_at: string; creator_wallet: string; terms: Record<string, unknown>; state: string }, wallet: string) {
+  return { id: b.id, state: b.state, starts_at: b.starts_at, ends_at: b.ends_at, title: b.terms.title, role: wallet === b.creator_wallet ? 'creator' : 'fan', call_path: `/calls/${b.id}` };
 }
 export async function GET(request: Request) {
   return logServerRequest(request, '/api/calls', async () => {
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
       const wallet = await requireWallet(request), id = new URL(request.url).searchParams.get('id');
       if (!id) {
         // Wallet is validated by the signed session; never interpolate arbitrary query input.
-        const { data, error } = await appDb().from('call_bookings').select(columns).eq('state', 'confirmed')
+        const { data, error } = await appDb().from('call_bookings').select(columns).in('state', ['confirmed', 'completed', 'cancelled', 'no_show', 'disputed'])
           .or(`creator_wallet.eq.${wallet},payer_wallet.eq.${wallet}`).order('starts_at', { ascending: false }).limit(100);
         if (error) throw new ApiError("Could not load your calls.", 503);
         return reply({ calls: (data ?? []).map(b => summary(b, wallet)) });
@@ -39,7 +39,8 @@ export async function GET(request: Request) {
         evidence = attendance(events ?? [], room, booking.starts_at, booking.ends_at);
         if (events?.length === 1000) evidence = { ...evidence, evidence_status: 'incomplete', gaps: [...evidence.gaps, 'event_limit'] };
       }
-      return reply({ call: summary(booking, wallet), attendance: evidence, recording_enabled: false });
+      const completion = verifiedCompletion(evidence, booking.starts_at, booking.ends_at);
+      return reply({ call: summary(booking, wallet), attendance: evidence, completion, recording_enabled: false });
     } catch (reason) { return apiFailure(reason); }
   });
 }
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
       assertOrigin(request);
       const wallet = await requireWallet(request), body = await boundedJSON(request);
       const booking = await participant(body.id, wallet), window = callWindow(booking.starts_at, booking.ends_at);
+      if (booking.state !== 'confirmed') throw new ApiError('This booking is no longer open for joining.', 409);
       const now = Date.now() / 1000;
       if (now < window.nbf) throw new ApiError("You can join 10 minutes before your booked time.", 409, 'CALL_EARLY');
       if (now >= window.exp) throw new ApiError("Access to this call has ended.", 410, 'CALL_ENDED');

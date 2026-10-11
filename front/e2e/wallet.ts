@@ -63,7 +63,7 @@ export async function installWallet(context: BrowserContext, keypair = Keypair.g
     // sends must explicitly select devnet rather than calling this SDK default.
     const account = { address, publicKey: new Uint8Array(bytes), chains: ['solana:mainnet', 'solana:devnet'], features: ['solana:signAndSendTransaction'] };
     const standardWallet = {
-      version: '1.0.0', name: 'Devnet test wallet', icon: 'data:image/png;base64,AA==',
+      version: '1.0.0', name: 'Phantom', icon: 'data:image/png;base64,AA==',
       chains: account.chains,
       get accounts() { return connected ? [account] : []; },
       features: { 'solana:signAndSendTransaction': { version: '1.0.0', supportedTransactionVersions: ['legacy'],
@@ -85,6 +85,7 @@ export async function installWallet(context: BrowserContext, keypair = Keypair.g
 }
 export async function connectWallet(page: Page) {
   await page.getByRole('button', { name: /^Connect wallet$/i }).click();
+  await page.getByRole('button', { name: 'Phantom', exact: true }).click();
 }
 export async function signIn(page: Page, next = '/dashboard') {
   await page.goto(next);

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
-import { AddressType, useAccounts, usePhantom } from "@phantom/react-sdk";
+
 import { useWalletSession } from "@/components/WalletSessionProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,7 +20,7 @@ const creators = [
 ];
 
 const steps = [
-  { number: "01", title: "Create your account", desc: "Connect your Solana wallet", icon: "/personalcard.svg" },
+  { number: "01", title: "Create your account", desc: "Sign in with email or your Solana wallet", icon: "/personalcard.svg" },
   { number: "02", title: "Customize your card", desc: "Photos, bio, colors and sections", icon: "/brush.svg" },
   { number: "03", title: "Add what you sell", desc: "Subscriptions, calls and packs", icon: "/gift.svg" },
   { number: "04", title: "Share your link", desc: "Publish on X, Instagram and TikTok", icon: "/send.svg" },
@@ -46,14 +46,11 @@ export default function HomePage({ children }: { children?: ReactNode }) {
   const session = useWalletSession();
   const reduceMotion = useReducedMotion();
   const reveal = reduceMotion ? { initial: false as const } : sectionReveal;
-  const { isConnected, isLoading } = usePhantom();
+  const isLoading = session.checking;
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [disconnectError, setDisconnectError] = useState('');
-  const sessionConnected = !!session.wallet;
-  const accounts = useAccounts();
-  const wallet = session.wallet || (isConnected
-    ? accounts?.find(account => account.addressType === AddressType.solana)?.address ?? ""
-    : "");
+  const sessionConnected = !!session.wallet && session.wallet === session.connectedWallet;
+  const wallet = sessionConnected ? session.wallet : '';
   const [card, setCard] = useState<{ wallet: string; alias: string } | null>(null);
   const hasCard = !!wallet && card?.wallet === wallet;
 
@@ -81,12 +78,12 @@ export default function HomePage({ children }: { children?: ReactNode }) {
   const handleSignIn = async (alias?: string) => {
     setIsDisconnecting(true); setDisconnectError('');
     try {
-      await session.authenticate();
+      await (sessionConnected ? session.ensureSession() : session.authenticate());
       if (alias) {
         const response = await fetch('/api/auth/session', { cache: 'no-store' });
         const result = await response.json();
         if (!response.ok) throw responseError(response, result, 'Unable to complete the request. Please retry.');
-        router.push(result.alias ? `/${encodeURIComponent(result.alias)}` : `/profile/buy-alias?${new URLSearchParams({ alias, next: '/dashboard/card' })}`);
+        router.push(result.alias ? `/${encodeURIComponent(result.alias)}` : `/profile/buy-alias?${new URLSearchParams({ alias, next: '/dashboard/card', welcome: '1' })}`);
         router.refresh();
       }
     } catch (reason) { setDisconnectError(userErrorMessage(reason, 'Unable to sign in. Retry.')); }
@@ -128,7 +125,7 @@ export default function HomePage({ children }: { children?: ReactNode }) {
                 aria-label={sessionConnected ? "Disconnect wallet" : "Connect wallet"}
                 className="h-10 rounded-xl border border-white/15 bg-white/5 px-4 text-xs font-bold tracking-wide text-white hover:bg-white/10 sm:px-6"
               >
-                {isDisconnecting ? "DISCONNECTING…" : sessionConnected ? "DISCONNECT" : "CONNECT"}
+                {isDisconnecting ? (sessionConnected ? "DISCONNECTING…" : "SIGNING IN…") : sessionConnected ? "DISCONNECT" : "CONNECT"}
               </Button>
               {disconnectError && <p role="alert" className="absolute right-0 top-full mt-2 w-56 rounded-lg bg-black/90 p-3 text-xs text-red-300">{disconnectError}</p>}
             </div>
@@ -142,7 +139,7 @@ export default function HomePage({ children }: { children?: ReactNode }) {
 
         <div className="relative z-10 mx-auto grid w-full max-w-[1480px] items-center gap-12 lg:grid-cols-[1.04fr_0.96fr] xl:gap-20">
           <motion.div initial={reduceMotion ? false : { opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7 }} className="max-w-4xl">
-            <div className="mb-6 flex items-center gap-3 text-xs font-black uppercase tracking-[0.28em] text-[#a3a3a3] sm:text-sm"><span className="h-px w-10 bg-[#a3a3a3]" />The creator card of the new era</div>
+            <div className="mb-6 flex items-center gap-3 text-xs font-black uppercase tracking-[0.28em] text-[#a3a3a3] sm:text-sm"><span className="h-px w-10 bg-[#a3a3a3]" />THE CARD FOR THE CREATORS ECONOMY</div>
             <h1 className="heading-font text-[clamp(1.65rem,5.2vw,6rem)] font-black leading-[1.05] tracking-[-0.055em]">
               <span className="block whitespace-nowrap">YOUR SPACE.</span>
               <span className="block whitespace-nowrap">YOUR AUDIENCE.</span>
@@ -155,7 +152,7 @@ export default function HomePage({ children }: { children?: ReactNode }) {
               const alias = (event.currentTarget.elements.namedItem("alias") as HTMLInputElement)?.value.trim();
               if (alias) void handleSignIn(alias);
             }}>
-              <div className="flex min-w-0 flex-1 items-center px-4"><span className="mr-2 text-xl font-bold text-white/30">@</span><input id="alias" name="alias" type="text" required minLength={1} maxLength={30} placeholder="youralias" autoComplete="off" aria-label="Claim your alias" className="h-14 min-w-0 flex-1 rounded-md bg-transparent text-lg font-medium text-white outline-none placeholder:text-white/60 focus-visible:ring-1 focus-visible:ring-white/50" /></div>
+              <div className="flex min-w-0 flex-1 items-center px-4"><span className="mr-2 text-xl font-bold text-white/30">@</span><input id="alias" name="alias" type="text" required minLength={1} maxLength={30} placeholder="youralias" autoComplete="off" aria-label="Claim your alias" className="h-14 min-w-0 flex-1 rounded-md bg-transparent text-lg font-medium text-white outline-none placeholder:text-white/60" /></div>
               <Button type="submit" className="h-14 rounded-xl bg-[#f5f5f5] px-8 text-sm font-black tracking-wide text-black transition hover:scale-[1.02] hover:bg-neutral-200">CLAIM YOUR CARD →</Button>
             </form>
             <div className="mt-7 flex flex-wrap gap-x-7 gap-y-3 text-sm font-medium text-white/55 sm:text-base">

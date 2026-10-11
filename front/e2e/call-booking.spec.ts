@@ -8,6 +8,8 @@ test('booking UI preserves uncertain sends, recovers by signature and fits mobil
   // custody and API verification are exercised by SBF/API tests separately.
   const fan = await installWallet(context), creator = Keypair.generate();
   const db = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
+  // These payment/call scenarios represent an existing alias owner.
+  expect((await db.from('cards_users').insert({ wallet_address: fan.publicKey.toBase58(), username: `booking_fan_${Date.now()}`, published: false })).error).toBeNull();
   const alias = `booking_${Date.now()}`;
   const seed = await db.from('cards_users').insert({ wallet_address: creator.publicKey.toBase58(), username: alias, published: true, display_name: 'Booking test creator' });
   expect(seed.error).toBeNull();
@@ -30,6 +32,7 @@ test('booking UI preserves uncertain sends, recovers by signature and fits mobil
   await page.goto(`/${alias}`);
   await expect(page.getByRole('heading', { name: "Book a call" })).toBeVisible();
   await page.getByRole('button', { name: "Connect wallet to book" }).click();
+  await page.getByRole('button', { name: 'Phantom', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Book and pay into escrow' })).toBeVisible();
   await page.getByLabel('Time slot (America/Lima)').selectOption(starts);
   await page.getByRole('checkbox').check();
@@ -42,7 +45,10 @@ test('booking UI preserves uncertain sends, recovers by signature and fits mobil
   expect(checkouts).toBe(1);
   await page.reload();
   const connect = page.getByRole('button', { name: "Connect wallet to book" });
-  if (await connect.isVisible()) await connect.click();
+  if (await connect.isVisible()) {
+    await connect.click();
+    await page.getByRole('button', { name: 'Phantom', exact: true }).click();
+  }
   await expect(page.getByRole('button', { name: 'Continue / verify booking' })).toBeVisible();
   await page.getByLabel("Signature to recover a submitted payment (optional)").fill('1'.repeat(88));
   await page.getByRole('button', { name: 'Continue / verify booking' }).click();

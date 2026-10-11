@@ -6,6 +6,8 @@ import { Keypair } from '@solana/web3.js';
 test('private call screen uses authenticated booking API, denies a stranger and fits mobile', async ({ context, page }) => {
   const fan = await installWallet(context), creator = Keypair.generate();
   const db = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
+  // These payment/call scenarios represent an existing alias owner.
+  expect((await db.from('cards_users').insert({ wallet_address: fan.publicKey.toBase58(), username: `video_fan_${Date.now()}`, published: false })).error).toBeNull();
   const profile = await db.from('cards_users').insert({wallet_address:creator.publicKey.toBase58(),username:`video_${Date.now()}`,published:false});
   expect(profile.error).toBeNull();
   const offer = await db.from('call_offers').insert({ creator_wallet: creator.publicKey.toBase58(), title: 'Private mentorship', description: 'Review a portfolio together.', duration_minutes: 30, price_units: 1000000, currency: 'USDC', cluster: 'devnet', timezone: 'UTC', availability: [], accepting: false }).select('id').single();
@@ -16,6 +18,7 @@ test('private call screen uses authenticated booking API, denies a stranger and 
   // network calls are covered by API mocks until account credentials are available.
   await page.goto(`/calls/${booking.data!.id}`);
   await page.getByRole('button', { name:"Connect wallet and sign in" }).click();
+  await page.getByRole('button', { name: 'Phantom', exact: true }).click();
   await expect(page.getByRole('heading', { name:'Private mentorship' })).toBeVisible();
   await expect(page.getByText('This call is not recorded.', {exact:false})).toBeVisible();
   const protectedResponse = await page.request.get(`/api/calls?id=${booking.data!.id}`);

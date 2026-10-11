@@ -1,7 +1,7 @@
 'use client';
 import { SITE_MOTTO } from '@/lib/brand';
 import { UserFacingError, userErrorMessage, responseError } from '@/lib/user-facing-error';
-import { Instagram, Youtube } from '@/components/CardIcons';
+import { Instagram, Profile, Youtube } from '@/components/CardIcons';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -14,19 +14,22 @@ import { TipForm } from '@/components/TipForm';
 import { useWalletSession } from '@/components/WalletSessionProvider';
 import { draftFromProfile, safeLink, type CreatorDraft } from '@/lib/creator-draft';
 import type { PublicCreator } from '@/lib/public-creator';
+import CreatorCallHistory from './CreatorCallHistory';
 
 type EditableText = 'name' | 'bio';
 
-export function PublicCreatorCard({ creator }: { creator: PublicCreator }) {
-  const [design, setDesign] = useState(creator.design);
+export function PublicCreatorCard({ creator, preview = false, embedded = false }: { creator: PublicCreator; preview?: boolean; embedded?: boolean }) {
+  const [savedDesign, setDesign] = useState(creator.design);
+  const design = preview ? creator.design : savedDesign;
   const session = useWalletSession();
-  const isOwner = (session.connectedWallet || session.wallet) === creator.wallet;
+  const isOwner = !preview && (session.connectedWallet || session.wallet) === creator.wallet;
   const imageInput = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState<EditableText | null>(null);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [failed, setFailed] = useState(false);
+  const Container = embedded ? 'div' : 'main';
   const light = design.theme === 'light';
   const accent = { mint: '#00F5A0', violet: '#b69aff', rose: '#ff94b9' }[design.accent];
 
@@ -92,11 +95,11 @@ export function PublicCreatorCard({ creator }: { creator: PublicCreator }) {
     </label><div className="grid grid-cols-1 gap-2 sm:grid-cols-2"><button disabled={busy} className="min-h-11 rounded-xl bg-violet-400 px-3 py-2 text-sm font-semibold text-black disabled:opacity-50">{busy ? 'Saving…' : 'Save changes'}</button><button type="button" disabled={busy} onClick={() => setEditing(null)} className="min-h-11 rounded-xl border border-white/20 px-3 py-2 text-sm">Cancel</button></div>
   </form>;
 
-  return <main id="main-content" tabIndex={-1} className={`min-h-screen px-4 py-5 sm:px-6 sm:py-7 ${light ? 'bg-[#f5f5f7] text-zinc-900' : 'bg-[#08080b] text-white'}`}>
-    <nav aria-label="Page navigation" className="mb-5 flex w-full items-center justify-between gap-4">
+  return <Container id={embedded ? undefined : "main-content"} tabIndex={embedded ? undefined : -1} className={`${embedded ? "p-3" : "min-h-screen px-4 pb-5 sm:px-6 sm:pb-7"} ${light ? 'bg-[#f5f5f7] text-zinc-900' : 'bg-[#08080b] text-white'}`}>
+    {!embedded && <nav aria-label="Page navigation" className="mt-2 mb-3 flex w-full items-center justify-between gap-4">
       <Link href="/" aria-label="VYNX home" className="flex min-h-11 min-w-11 items-center rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current"><Image src="/logo-white.svg" alt="" width={22} height={16} className={`h-4 w-auto${light ? ' brightness-0' : ''}`} /></Link>
-      <Link href="/dashboard" aria-label="My profile" title="My profile" className="flex size-11 items-center justify-center rounded-full border border-current/10 opacity-70 transition hover:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current"><UserRound size={20} aria-hidden="true" /></Link>
-    </nav>
+      <Link href="/dashboard" aria-label="My profile" title="My profile" className="flex size-11 items-center justify-center rounded-full border border-current/10 opacity-70 transition hover:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current"><Profile size={20} aria-hidden="true" /></Link>
+    </nav>}
     <div className="mx-auto max-w-[460px]">
       <section aria-label="Creator card" data-testid="creator-card" className="relative isolate flex aspect-[1/1.618] w-full flex-col overflow-hidden rounded-[2rem] border border-violet-400/30 bg-[#17131e] text-white shadow-[0_24px_80px_-24px_#a855f755]">
         {design.avatar ? <Image src={design.avatar} alt={`${design.name} avatar`} fill sizes="(max-width: 492px) calc(100vw - 32px), 460px" priority unoptimized className="-z-20 object-cover object-top" /> : <div className="absolute inset-0 -z-20 flex items-start justify-center bg-[radial-gradient(ellipse_at_top,#643676_0%,#241b30_45%,#17131e_80%)] pt-[18%]"><UserRound size={96} className="text-violet-200/25" aria-hidden="true" /></div>}
@@ -109,23 +112,24 @@ export function PublicCreatorCard({ creator }: { creator: PublicCreator }) {
           <div className="mt-5 space-y-2.5">{design.links.filter(link => safeLink(link.url)).map(link => <a key={link.id} href={safeLink(link.url)!} target="_blank" rel="noopener noreferrer" className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-white/15 bg-white/[.07] px-4 py-3 text-sm backdrop-blur-md transition hover:bg-violet-400/15"><Link2 size={21} className="shrink-0 text-violet-400" aria-hidden="true" /><span className="min-w-0 flex-1 break-words">{link.title}</span><ArrowUpRight size={16} className="shrink-0 text-white/40" aria-hidden="true" /></a>)}
             <Dialog>
               <DialogPrimitive.Trigger asChild>
-                <button type="button" className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-violet-400/35 bg-violet-400/15 px-4 py-3 text-left text-sm transition hover:bg-violet-400/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"><Heart size={23} className="shrink-0 text-violet-300" aria-hidden="true" /><span className="flex-1">Tips</span><span className="text-xs text-white/60">{creator.tipsEnabled ? 'USDC · SOL' : 'Paused'}</span><ArrowUpRight size={15} className="text-white/40" aria-hidden="true" /></button>
+                <button type="button" disabled={preview} className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-violet-400/35 bg-violet-400/15 px-4 py-3 text-left text-sm transition hover:bg-violet-400/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"><Heart size={23} className="shrink-0 text-violet-300" aria-hidden="true" /><span className="flex-1">Tips</span><span className="text-xs text-white/60">{creator.tipsEnabled ? 'USDC' : 'Paused'}</span><ArrowUpRight size={15} className="text-white/40" aria-hidden="true" /></button>
               </DialogPrimitive.Trigger>
               <DialogContent aria-describedby={undefined} className={`max-h-[85dvh] w-[calc(100%-2rem)] overflow-y-auto rounded-3xl p-0 pt-12 sm:rounded-3xl ${light ? 'border-zinc-200 bg-[#f5f5f7] text-zinc-900' : 'border-violet-400/30 bg-[#17131e] text-white'}`}>
                 <DialogTitle className="sr-only">Tip @{creator.alias}</DialogTitle>
                 <DialogPrimitive.Close aria-label="Close tipping" title="Close (Esc)" className="absolute top-2 right-3 flex size-11 items-center justify-center border-0 bg-transparent opacity-70 transition hover:opacity-100 focus-visible:outline-2 focus-visible:outline-violet-400"><X size={20} aria-hidden="true" /></DialogPrimitive.Close>
-                <TipForm alias={creator.alias} creatorWallet={creator.wallet} enabled={creator.tipsEnabled} />
+                {!preview && <TipForm alias={creator.alias} creatorWallet={creator.wallet} enabled={creator.tipsEnabled} />}
               </DialogContent>
             </Dialog>
           </div>
-          <nav aria-label="Creator social links" className="mt-5 flex flex-wrap items-center justify-center gap-3">{Object.entries(design.socials).filter(([, url]) => safeLink(url)).map(([network, url]) => <a key={network} href={safeLink(url)!} target="_blank" rel="noopener noreferrer" aria-label={network === 'x' ? 'X' : network === 'youtube' ? 'YouTube' : 'Instagram'} className="flex size-11 items-center justify-center rounded-xl bg-white/5 text-white/80 transition hover:bg-white/10">{network === 'instagram' ? <Instagram size={23} aria-hidden="true" /> : network === 'youtube' ? <Youtube size={23} aria-hidden="true" /> : <span className="text-xl" aria-hidden="true">𝕏</span>}</a>)}<button onClick={() => void share()} aria-label="Share creator page" className="flex size-11 items-center justify-center rounded-xl bg-white/5 text-white/80 hover:bg-white/10"><Share2 size={21} aria-hidden="true" /></button></nav>
+          <nav aria-label="Creator social links" className="mt-5 flex flex-wrap items-center justify-center gap-3">{Object.entries(design.socials).filter(([, url]) => safeLink(url)).map(([network, url]) => <a key={network} href={safeLink(url)!} target="_blank" rel="noopener noreferrer" aria-label={network === 'x' ? 'X' : network === 'youtube' ? 'YouTube' : 'Instagram'} className="flex size-11 items-center justify-center rounded-xl bg-white/5 text-white/80 transition hover:bg-white/10">{network === 'instagram' ? <Instagram size={23} aria-hidden="true" /> : network === 'youtube' ? <Youtube size={23} aria-hidden="true" /> : <span className="text-xl" aria-hidden="true">𝕏</span>}</a>)}<button disabled={preview} onClick={() => void share()} aria-label="Share creator page" className="flex size-11 items-center justify-center rounded-xl bg-white/5 text-white/80 hover:bg-white/10"><Share2 size={21} aria-hidden="true" /></button></nav>
         </div>
       </section>
-      {creator.published !== false && <CallBookingPanel key={`${creator.alias}:${session.wallet}`} alias={creator.alias} />}
+      {!preview && creator.published !== false && <CallBookingPanel key={`${creator.alias}:${session.wallet}`} alias={creator.alias} />}
+      {!preview && creator.published !== false && <CreatorCallHistory key={creator.alias} alias={creator.alias} />}
       {notice && <p role={failed ? 'alert' : 'status'} className={`mt-4 rounded-xl border p-3 text-sm ${failed ? 'border-red-400/30 text-red-400' : 'border-emerald-400/30 text-emerald-500'}`}>{notice}</p>}
-      <footer className={`mt-6 text-center text-[10px] tracking-widest opacity-70 ${creator.published === false ? 'pb-40' : 'pb-16'}`}><p>{SITE_MOTTO}</p><p className="mt-2">VYNX · SOLANA DEVNET</p></footer>
+      <footer className={`mt-6 text-center text-[10px] tracking-widest opacity-70 ${embedded ? '' : creator.published === false ? 'pb-40' : 'pb-16'}`}><p>{SITE_MOTTO}</p><p className="mt-2">VYNX · SOLANA DEVNET</p></footer>
     </div>
-    {creator.published === false && <p role="status" className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 right-24 z-40 max-w-[460px] rounded-xl border border-violet-400/25 p-4 text-xs leading-5 shadow-lg backdrop-blur-md sm:left-6 sm:right-26 ${light ? 'bg-white/95 text-zinc-900' : 'bg-[#17131e]/95 text-white'}`}>Your card is unpublished. Only you can view it.</p>}
+    {!preview && creator.published === false && <p role="status" className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 right-24 z-40 max-w-[460px] rounded-xl border border-violet-400/25 p-4 text-xs leading-5 shadow-lg backdrop-blur-md sm:left-6 sm:right-26 ${light ? 'bg-white/95 text-zinc-900' : 'bg-[#17131e]/95 text-white'}`}>Your card is unpublished. Only you can view it.</p>}
     {isOwner && <Link href="/dashboard/card" aria-label="Edit my creator card" title="Edit my creator card" className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex size-14 items-center justify-center rounded-full text-black shadow-lg transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet-400 sm:right-6" style={{ background: accent }}><Pencil size={22} aria-hidden="true" /></Link>}
-  </main>;
+  </Container>;
 }

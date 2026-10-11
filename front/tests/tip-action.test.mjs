@@ -1,11 +1,13 @@
 import test from 'node:test';
 import { createServer } from 'node:http';
 import assert from 'node:assert/strict';
-import { Keypair, SystemInstruction, Transaction } from '@solana/web3.js';
+import { Keypair, Transaction } from '@solana/web3.js';
 import { GET, POST, OPTIONS } from '../app/api/actions/tip/[alias]/route.ts';
 import { POST as confirm, OPTIONS as confirmOptions } from '../app/api/actions/tip/[alias]/confirm/route.ts';
 import { GET as discovery, OPTIONS as discoveryOptions } from '../app/actions.json/route.ts';
 import { ALIAS_BLOCKCHAIN_ID, DEVNET_GENESIS_HASH } from '../lib/alias-network.ts';
+import { decodeTransferCheckedInstruction } from '@solana/spl-token';
+import { buildTip } from '../lib/tip-server.ts';
 import { MEMO_PROGRAM } from '../lib/sol-payment.ts';
 const origin = 'https://vynx.example';
 const payer = Keypair.generate().publicKey.toBase58();
@@ -14,16 +16,24 @@ const context = { params: Promise.resolve({ alias: 'Alice' }) };
 const json = data => new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } });
 const request = (method, query = '', body) => new Request(`${origin}/api/actions/tip/Alice${query}`, { method, headers: { origin: 'https://blink.example', 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
 
-test('public SOL Action discovers, builds, verifies and records without a session', async () => {
+test('public USDC Action builds sponsored tips and preserves legacy SOL verification', async () => {
   const originalFetch = globalThis.fetch;
-  const keys = ['SUPABASE_URL', 'SUPABASE_SECRET_KEY', 'NEXT_PUBLIC_APP_URL', 'NEXT_PUBLIC_SOLANA_RPC_URL'];
+  const keys = ['SUPABASE_URL', 'SUPABASE_SECRET_KEY', 'NEXT_PUBLIC_APP_URL', 'NEXT_PUBLIC_SOLANA_RPC_URL', 'KORA_RPC_URL'];
   const saved = keys.map(key => process.env[key]);
-  Object.assign(process.env, { SUPABASE_URL: 'https://tip-action.supabase.co', SUPABASE_SECRET_KEY: 'test-key', NEXT_PUBLIC_APP_URL: origin, NEXT_PUBLIC_SOLANA_RPC_URL: 'https://rpc.example' });
+  Object.assign(process.env, { SUPABASE_URL: 'https://tip-action.supabase.co', SUPABASE_SECRET_KEY: 'test-key', NEXT_PUBLIC_APP_URL: origin, NEXT_PUBLIC_SOLANA_RPC_URL: 'https://rpc.example', KORA_RPC_URL: 'https://kora.example' });
   let published = true, enabled = true, rpcCalls = 0, payment = null, record = null, storageFails = false;
   const signature = '1'.repeat(88);
+  const sponsor = Keypair.generate();
   globalThis.fetch = async (input, init) => {
     const req = new Request(input, init), url = new URL(req.url);
     if (url.pathname.endsWith('/rpc/consume_public_endpoint_limit')) return json({ allowed: true, retry_after: 60 });
+    if (url.hostname === 'kora.example') {
+      const rpc = await req.json();
+      if (rpc.method === 'getPayerSigner') return json({ result: { signer_address: sponsor.publicKey.toBase58() } });
+      const tx = Transaction.from(Buffer.from(rpc.params.transaction, 'base64'));
+      tx.partialSign(sponsor);
+      return json({ result: { signed_transaction: tx.serialize({ requireAllSignatures: false }).toString('base64'), signer_pubkey: sponsor.publicKey.toBase58() } });
+    }
     if (url.hostname === 'rpc.example') {
       rpcCalls++;
       const rpc = await req.json();
@@ -73,18 +83,23 @@ test('public SOL Action discovers, builds, verifies and records without a sessio
     assert.equal((await (await GET(request('GET'), context)).json()).disabled, true);
     assert.equal((await POST(request('POST', '', { account: payer }), context)).status, 404);
     enabled = true;
-    for (const query of ['?amount=0', '?amount=11', '?amount=1e-2', '?amount=0.0000000001', '?currency=USDC']) assert.equal((await POST(request('POST', query, { account: payer }), context)).status, 400);
+    for (const query of ['?amount=0', '?amount=1001', '?amount=1e-2', '?amount=0.0000000001', '?currency=SOL']) assert.equal((await POST(request('POST', query, { account: payer }), context)).status, 400);
     for (const body of [null, {}, { account: 'invalid' }, { account: recipient }]) assert.equal((await POST(request('POST', '', body), context)).status, 400);
     assert.equal(rpcCalls, 0);
-    const built = await POST(request('POST', '?amount=0.100000001', { account: payer, recipient: payer }), context);
+    const built = await POST(request('POST', '?amount=1.000001', { account: payer, recipient: payer }), context);
     assert.equal(built.status, 200);
     const body = await built.json();
     const tx = Transaction.from(Buffer.from(body.transaction, 'base64'));
-    assert.equal(tx.feePayer.toBase58(), payer); assert.equal(tx.instructions.length, 2);
-    const transfer = SystemInstruction.decodeTransfer(tx.instructions[0]);
-    assert.equal(transfer.toPubkey.toBase58(), recipient); assert.equal(transfer.lamports, 100000001n);
-    assert.equal(tx.instructions[1].data.toString(), 'vynx:tip:creator-id');
-    assert.equal(body.links.next.href, '/api/actions/tip/alice/confirm?amount=0.100000001');
+    assert.equal(tx.feePayer.toBase58(), sponsor.publicKey.toBase58()); assert.equal(tx.instructions.length, 3);
+    const transfer = decodeTransferCheckedInstruction(tx.instructions[1]);
+    assert.equal(transfer.data.amount, 1000001n);
+    assert.equal(tx.instructions[2].data.toString(), 'vynx:tip:creator-id');
+    assert.equal(body.links.next.href, '/api/actions/tip/alice/confirm?currency=USDC&amount=1.000001');
+    assert.match(body.message, /USDC/);
+    await assert.rejects(buildTip('alice', payer, '1', 'SOL'), /only accepted in USDC/);
+    const defaultTip = await buildTip('alice', payer, '1');
+    assert.equal(defaultTip.currency, 'USDC');
+    assert.equal(defaultTip.sponsored, true);
     assert.equal(record, null);
     const callback = () => request('POST', '?amount=0.01', { account: payer, signature });
     assert.equal((await confirm(callback(), context)).status, 409);

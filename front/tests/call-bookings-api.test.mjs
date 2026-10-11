@@ -44,6 +44,7 @@ test('booking API binds session, reuses checkout and verifies finalized transact
    booking??={id,offer_id:offer.id,creator_wallet:offer.creator_wallet,payer_wallet:args.payer,starts_at:args.slot,ends_at:new Date(Date.parse(args.slot)+1800000).toISOString(),expires_at:new Date(Math.floor((Date.now()+600000)/1000)*1000).toISOString(),terms:{policy:'vynx-escrow-devnet-v1'},price_units:1000000,state:'awaiting_payment',transaction:null,last_valid_block_height:null,payment_signature:null};return json(booking);
   }
   if(name==='prepare_call_payment'){booking.transaction??=args.encoded_transaction;booking.last_valid_block_height??=args.valid_height;return json(booking);}
+  if(name==='transition_call_booking'){assert.equal(args.actor,payer.publicKey.toBase58());assert.equal(args.target,'disputed');booking.state=args.target;return json(booking);}
   if(name==='confirm_call_payment'){confirmations++;booking.state='confirmed';booking.payment_signature=args.signature;return json(booking);}
   throw Error(`Unexpected database ${name}`);
  };
@@ -67,6 +68,9 @@ test('booking API binds session, reuses checkout and verifies finalized transact
   assert.equal((await POST(request({action:'confirm',id,signature}))).status,200);assert.equal(confirmations,2);
   chainTx.meta.err={InstructionError:[0,'Custom']};assert.equal((await POST(request({action:'confirm',id,signature}))).status,400);assert.equal(confirmations,2);
   assert.equal((await GET(new Request(`${origin}/api/bookings?id=${id}`))).status,401);
+  assert.equal((await POST(request({action:'transition',id,state:'confirmed'}))).status,400);
+  assert.equal((await POST(request({action:'transition',id,state:'disputed'},{origin:'https://evil.test'}))).status,403);
+  const changed=await POST(request({action:'transition',id,state:'disputed'}));assert.equal(changed.status,200);assert.equal((await changed.json()).booking.state,'disputed');
  }finally{
   globalThis.fetch=originalFetch;keys.forEach((key,i)=>{if(saved[i]===undefined)delete process.env[key];else process.env[key]=saved[i];});
   await new Promise(resolve=>server.close(resolve));

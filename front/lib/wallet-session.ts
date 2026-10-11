@@ -60,8 +60,13 @@ export async function verifySignIn(id: string, wallet: string, signature: string
   if (typeof signature !== 'string' || !validWalletSignature(key, data.message, signature)) throw new ApiError('Wallet signature is invalid. Reconnect your wallet and approve a new sign-in message.', 401, 'SIGNATURE_REJECTED');
   const { data: used, error: consumeError } = await db.from('wallet_nonces').delete().eq('id', id).gt('expires_at', new Date().toISOString()).select('id');
   if (consumeError || used?.length !== 1) throw new ApiError('Sign-in was already used.', 401);
+  return createWalletSession(wallet);
+}
+export async function createWalletSession(wallet: string, seconds = SESSION_SECONDS) {
+  walletKey(wallet);
+  const db = appDb();
   const token = randomBytes(32).toString('hex');
-  const { error: sessionError } = await db.from('wallet_sessions').insert({ token_hash: sessionHash(token), wallet, expires_at: new Date(Date.now() + SESSION_SECONDS * 1000).toISOString() });
+  const { error: sessionError } = await db.from('wallet_sessions').insert({ token_hash: sessionHash(token), wallet, expires_at: new Date(Date.now() + seconds * 1000).toISOString() });
   if (sessionError) throw new ApiError('Unable to create session.', 503);
   return token;
 }

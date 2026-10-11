@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { BrandLogo } from '@/components/BrandLogo';
 import { useWalletSession } from '@/components/WalletSessionProvider';
 
-export function WalletAuthGate({ title = 'Unlock your dashboard', description = 'Open Phantom and approve the sign-in message to continue.', reloadAfterSignIn = false }: { title?: string; description?: string; reloadAfterSignIn?: boolean }) {
+export function WalletAuthGate({ title = 'Unlock your dashboard', description = 'Sign in with email, Google, or your Solana wallet to continue.', reloadAfterSignIn = false }: { title?: string; description?: string; reloadAfterSignIn?: boolean }) {
   const session = useWalletSession();
   const router = useRouter();
   const [busy, setBusy] = useState(false);

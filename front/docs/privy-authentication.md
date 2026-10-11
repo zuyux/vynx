@@ -1,0 +1,21 @@
+# Privy authentication
+
+Set `PRIVY_APP_ID` and `PRIVY_APP_SECRET` in `front/.env.local`. Both are already read by the server; no `NEXT_PUBLIC_PRIVY_*` variable is needed. The layout passes only the app ID to the client provider. If that ID is missing from a cached/static shell, the client recovers it from the uncached `/api/auth/config` endpoint. Email and Google controls remain visible when Privy is unavailable, with an availability message. The app secret stays in the server SDK and must never be exposed in public environment variables.
+
+The sign-in chooser offers Phantom, Brave Wallet, an email input with “Continue with email,” and “Continue with Google,” under an explicit Privy section. Phantom and Brave use their specific injected providers and a fresh signed Vynx challenge. With these credentials configured, Privy offers wallet, email, and Google login. Email/social users without a wallet receive an embedded Solana wallet. Without Privy configuration, the Phantom and Brave options remain available.
+
+In the Privy dashboard, enable email and Google as needed, enable Solana embedded wallets, and allow the local and deployed app origins. Existing creators should log in with their existing wallet to access the same profile, aliases, bookings, and sponsorships. An embedded wallet is a separate wallet identity; email login does not merge existing wallet records.
+
+After login, the browser sends a Privy access token and selected wallet to `/api/auth/session`. The server SDK checks the JWT signature, issuer, audience and expiry, fetches the authenticated user from Privy, and requires a verified linked Solana wallet matching the requested address. Vynx issues its existing HttpOnly session cookie, bounded by the Privy access-token expiry and at most one hour. Active Privy sessions refresh only after Privy is explicitly selected; switching to a browser wallet suspends Privy session refresh. A saved session can authorize account pages, but alias redirects require a matching, live connected wallet. Reconnect always presents the chooser and freshly authenticates the selected provider; logout revokes the Vynx session and signs out of Privy.
+
+All payment and sponsorship signing uses the shared session wallet interface. Privy submissions explicitly target `solana:devnet`, independently check the RPC genesis hash, and preserve partially signed server transactions. Existing server payment verification still controls payment confirmation. Email login does not fund an embedded wallet: devnet SOL/USDC must be supplied separately.
+
+`npm ci` uses the checked-in `.npmrc` to bypass conflicting optional EVM peers between Privy and Phantom. Required Solana peers and the Stripe loader used internally by Privy's UI are explicitly installed. Vynx does not enable fiat onramping or EVM wallets.
+
+Run `npm test`, `npm run typecheck`, and `npm run build`. `tests/privy-auth.test.mjs` uses locally signed ES256 tokens and mocked Privy/database HTTP responses to check valid authentication, forged/expired/wrong-app/wrong-issuer tokens, unverified and unrelated wallets, origin checks, cookie expiry, replacement, logout, and provider failure.
+
+Regression checks: `tests/browser-wallet.test.mjs` verifies exact provider selection, fresh connect/sign-in despite cached public keys, rejected sign-in, changed accounts, and cancellation. `e2e/auth-methods.spec.ts` verifies saved aliases cannot bypass the chooser or rejected approvals, reconnects require fresh authentication, and Brave/Phantom selections remain separate.
+
+The email action passes the entered address to Privy as an email prefill and restricts the next screen to email verification. The Google action restricts the next screen to Google OAuth. Explicit email/Google choices sign out an existing Privy account before starting the selected flow so a cached account cannot silently bypass the chosen method.
+
+After successful Phantom, Brave Wallet, or Privy sign-in, Vynx checks the current server session for the same wallet. Users without an alias are sent to `/profile/buy-alias?welcome=1&next=%2Fdashboard%2Fcard`, which invites them to claim an alias and create a card. Existing alias owners keep their current flow. Failed or mismatched session checks never trigger onboarding.

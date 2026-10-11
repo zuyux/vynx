@@ -81,6 +81,29 @@ export function normalizedEvent(body: Record<string, unknown>): VideoEvent | nul
 }
 
 type Interval = [number, number];
+export type VerifiedCompletion = {
+  policy: 'attendance-v1';
+  status: 'pending' | 'review_required' | 'below_threshold' | 'verified';
+  required_percent: number;
+  required_seconds: number;
+  reasons: string[];
+};
+
+// This verifies attendance only. Payer acknowledgement, service quality, ratings
+// and escrow settlement are independent decisions. Recompute as late events arrive.
+export function verifiedCompletion(evidence: ReturnType<typeof attendance> | null, start: string, end: string, now = Date.now()): VerifiedCompletion {
+  const duration = (Date.parse(end) - Date.parse(start)) / 1000;
+  const result = { policy: 'attendance-v1' as const, required_percent: 90, required_seconds: Number.isFinite(duration) && duration > 0 ? duration * 0.9 : 0 };
+  if (!Number.isFinite(duration) || duration <= 0) return { ...result, status: 'review_required', reasons: ['invalid_schedule'] };
+  if (now < Date.parse(end)) return { ...result, status: 'pending', reasons: ['session_not_ended'] };
+  if (!evidence) return { ...result, status: 'review_required', reasons: ['missing_provider_evidence'] };
+  if (evidence.evidence_status !== 'webhook_evidence' || evidence.gaps.length) return { ...result, status: 'review_required', reasons: evidence.gaps.length ? [...evidence.gaps] : ['incomplete_evidence'] };
+  if (evidence.creator_seconds <= 0 || evidence.fan_seconds <= 0 || evidence.simultaneous_seconds < result.required_seconds) {
+    return { ...result, status: 'below_threshold', reasons: ['insufficient_simultaneous_attendance'] };
+  }
+  return { ...result, status: 'verified', reasons: [] };
+}
+
 function union(intervals: Interval[]) {
   const result: Interval[] = [];
   for (const interval of intervals.sort((a, b) => a[0] - b[0])) {
@@ -97,8 +120,15 @@ export function attendance(events: VideoEvent[], room: VideoRoom, start: string,
     const p = event.payload;
     if (event.event_type.startsWith('meeting.')) {
       if (typeof p.meeting_id !== 'string' || typeof p.start_ts !== 'number') { gaps.add('invalid_meeting'); continue; }
-      const meeting = meetings.get(p.meeting_id) ?? {}; meeting.start = p.start_ts;
-      if (event.event_type === 'meeting.ended') { if (typeof p.end_ts === 'number' && p.end_ts >= p.start_ts) meeting.end = p.end_ts; else gaps.add('invalid_meeting'); }
+      const meeting = meetings.get(p.meeting_id) ?? {};
+      if (meeting.start !== undefined && meeting.start !== p.start_ts) gaps.add('conflicting_meeting');
+      meeting.start = p.start_ts;
+      if (event.event_type === 'meeting.ended') {
+        if (typeof p.end_ts === 'number' && p.end_ts >= p.start_ts) {
+          if (meeting.end !== undefined && meeting.end !== p.end_ts) gaps.add('conflicting_meeting');
+          meeting.end = p.end_ts;
+        } else gaps.add('invalid_meeting');
+      }
       meetings.set(p.meeting_id, meeting); continue;
     }
     if (p.user_id !== room.creator_user_id && p.user_id !== room.fan_user_id) { gaps.add('unknown_participant'); continue; }

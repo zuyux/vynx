@@ -4,7 +4,7 @@ Test date: October 10, 2026. Tests use a production Next.js build, isolated Post
 
 ## Coverage
 
-The reproducible Playwright matrix uses installed Google Chrome (desktop and Pixel 7 emulation), Playwright Firefox, and Playwright WebKit (desktop and iPhone 13 emulation). Public pages, disclosures, creator cards, sponsorship offers, editor, preview and dashboards are checked for horizontal overflow at 320, 375, 430, 768 and 1280 pixels. The default application suite exercises the legacy devnet alias-claim flow and also checks publication, reload persistence, image upload, SOL/USDC tipping, payment recovery, cancellation, signed authentication, privacy, logout and database authorization.
+The reproducible Playwright matrix uses installed Google Chrome (desktop and Pixel 7 emulation), Playwright Firefox, and Playwright WebKit (desktop and iPhone 13 emulation). Public pages, disclosures, creator cards, sponsorship offers, editor, preview and dashboards are checked for horizontal overflow at 320, 375, 430, 768 and 1280 pixels. The default application suite exercises the legacy devnet alias-claim flow and also checks publication, reload persistence, image upload, USDC tipping, payment recovery, cancellation, signed authentication, privacy, logout and database authorization.
 
 An additional WebDriver BiDi smoke run used installed Firefox 157.0 to check all seven public/disclosure routes, navigation and script errors at the same five widths. The full signed-wallet suite uses Playwright Firefox 155.0.
 

@@ -29,6 +29,12 @@ export function validateEnvironment(env) {
       errors.push(`${key} still contains an example placeholder.`);
     }
   }
+  const privyAppId = env.PRIVY_APP_ID?.trim();
+  const privySecret = env.PRIVY_APP_SECRET?.trim();
+  if (!!privyAppId !== !!privySecret) errors.push('PRIVY_APP_ID and PRIVY_APP_SECRET must be configured together.');
+  for (const key of ['PRIVY_APP_ID', 'PRIVY_APP_SECRET']) {
+    if (env[key]?.trim() && PLACEHOLDER_PATTERN.test(env[key])) errors.push(`${key} still contains an example placeholder.`);
+  }
   const phantomAppId = env.NEXT_PUBLIC_PHANTOM_APP_ID?.trim();
   if (phantomAppId && PLACEHOLDER_PATTERN.test(phantomAppId)) {
     errors.push('NEXT_PUBLIC_PHANTOM_APP_ID still contains an example placeholder. Leave it empty to use the Phantom extension.');

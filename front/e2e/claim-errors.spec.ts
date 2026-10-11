@@ -15,7 +15,10 @@ test('alias claim errors guide recovery and verification never resends the payme
     await page.getByLabel('Alias', { exact: true }).fill(`signin_${Date.now()}`);
     await page.evaluate(() => { (window as unknown as { walletTestReject: boolean }).walletTestReject = true; });
     await page.getByRole('button', { name: 'Connect wallet', exact: true }).click();
+  await page.getByRole('button', { name: 'Phantom', exact: true }).click();
     await expect(page.getByRole('alert').filter({ hasText: 'approve the sign-in message' })).toBeVisible();
+    await page.getByRole('button', { name: 'Connect wallet', exact: true }).click();
+    await page.getByRole('button', { name: 'Phantom', exact: true }).click();
     const claim = page.getByRole('button', { name: /Claim alias/ });
     await expect(claim).toBeEnabled();
     expect((await db.from('cards_users').insert({ wallet_address: otherWallet, username: taken })).error).toBeNull();

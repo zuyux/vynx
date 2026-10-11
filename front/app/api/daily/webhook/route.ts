@@ -16,16 +16,8 @@ export async function POST(request: Request) {
       if (error) throw new ApiError('Event storage unavailable.', 503);
       // Other Daily rooms can share a domain webhook; they are outside our bookings.
       if (!room) return Response.json({ received: true });
-      const { error: insertError } = await db.from('call_video_events').insert({ ...event, booking_id: room.booking_id });
-      if (insertError) {
-        if (insertError.code !== '23505') throw new ApiError('Event storage unavailable.', 503);
-        const { data: original, error: readError } = await db.from('call_video_events').select('booking_id,event_type,event_ts,payload').eq('event_id', event.event_id).single();
-        if (readError) throw new ApiError('Event storage unavailable.', 503);
-        // JSONB can reorder keys; compare canonical normalized payloads.
-        const canonical = (v: Record<string, unknown>) => JSON.stringify(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)));
-        if (original.booking_id !== room.booking_id || original.event_type !== event.event_type || original.event_ts !== event.event_ts
-          || canonical(original.payload) !== canonical(event.payload)) throw new ApiError('Conflicting event ID.', 409);
-      }
+      const { error: insertError } = await db.rpc('record_call_video_event', { ...event, booking_id: room.booking_id });
+      if (insertError) throw new ApiError(insertError.code === '23505' ? 'Conflicting event ID.' : 'Event storage unavailable.', insertError.code === '23505' ? 409 : 503);
       // Acknowledge only after durable insert, so provider retries recover database failures.
       return Response.json({ received: true });
     } catch (reason) { return apiFailure(reason); }

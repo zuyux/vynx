@@ -82,3 +82,10 @@ test('registry configuration requires one private sponsor key source and a bound
     { NEXT_PUBLIC_SPONSOR_KEYPAIR_PATH: '/tmp/sponsor.json' },
   ]) assert(validateEnvironment({ ...validEnvironment, ...env }).length > 0);
 });
+
+test('Privy requires both server credentials and rejects exposing its secret', () => {
+  assert.deepEqual(validateEnvironment({ ...validEnvironment, PRIVY_APP_ID: 'privy-app', PRIVY_APP_SECRET: 'privy-secret' }), []);
+  assert.ok(validateEnvironment({ ...validEnvironment, PRIVY_APP_ID: 'privy-app' }).some(error => error.includes('configured together')));
+  assert.ok(validateEnvironment({ ...validEnvironment, PRIVY_APP_SECRET: 'privy-secret' }).some(error => error.includes('configured together')));
+  assert.ok(validateEnvironment({ ...validEnvironment, NEXT_PUBLIC_PRIVY_APP_SECRET: 'privy-secret' }).some(error => error.includes('public NEXT_PUBLIC_')));
+});

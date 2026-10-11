@@ -287,12 +287,12 @@ Start after the full alias-to-tip MVP passes end-to-end tests. The first version
 - [ ] **P2** Select the payment custody and settlement mechanism; evaluate holding funds until completion and define release, refund, and dispute rules before implementation. (Custom Solana program development selected for independent audit; [evaluation and policy](docs/booking-escrow-evaluation.md), [implementation](docs/custom-booking-escrow.md); production audit and final policy pending.)
 - [x] **P2** Provide a private video-call link to the booked participants and select a video provider with verifiable attendance and duration events. (Daily private rooms, participant tokens, signed durable attendance events and simultaneous-duration calculation implemented; real two-browser/provider-webhook smoke passed. Deployed on [vynx.me](https://vynx.me) with an active permanent Daily webhook; see [hosted evidence](docs/daily-vercel-smoke.json). Recording remains a separate prototype step. See [prototype spec](docs/ai-dispute-resolution-spec.md).)
 - [ ] **P2** Maintain a Vynx operating treasury and durable server worker to fund and reconcile Daily billing automatically, with spending limits and funds separate from booking escrow. See [treasury spec](docs/daily-operating-treasury-spec.md).
-- [ ] **P2** Track booking states, including awaiting payment, confirmed, completed, cancelled, no-show, and disputed; verify provider events server-side and process them idempotently.
-- [ ] **P2** Define completion criteria using both participants' attendance and session duration. Keep verified completion separate from satisfaction or performance ratings.
-- [ ] **P2** Allow only the paying fan to submit one review per completed booking, with an overall rating, comment, and feedback on punctuality, communication, and fulfillment of the offered service.
-- [ ] **P2** Show verified completed-call counts, average ratings, review counts, and comments on the public Creator Card, with an empty state for creators without history.
+- [x] **P2** Track booking states, including awaiting payment, confirmed, completed, cancelled, no-show, and disputed; verify provider events server-side and process them idempotently.
+- [x] **P2** Define completion criteria using both participants' attendance and session duration. Keep verified completion separate from satisfaction or performance ratings.
+- [x] **P2** Allow only the paying fan to submit one review per completed booking, with an overall rating, comment, and feedback on punctuality, communication, and fulfillment of the offered service.
+- [x] **P2** Show verified completed-call counts, average ratings, review counts, and comments on the public Creator Card, with an empty state for creators without history.
 - [ ] **P2** Define cancellation deadlines and handling for creator/fan no-shows, connection failures, refunds, disputes, and abusive reviews.
-- [ ] **P2** Verify booking authorization, slot conflicts, payment retries, attendance event retries, review eligibility, rating aggregation, and refund/settlement behavior with automated tests.
+- [x] **P2** Verify booking authorization, slot conflicts, payment retries, attendance event retries, review eligibility, rating aggregation, and refund/settlement behavior with automated tests. PostgreSQL concurrency checks, API tests, and LiteSVM escrow deadline/allocation tests pass; see [coverage and commands](front/docs/booking-test-coverage.md).
 
 Acceptance criteria:
 

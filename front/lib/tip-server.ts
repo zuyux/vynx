@@ -1,5 +1,5 @@
 import { assertRegistryOwnership } from './alias-registration';
-import { Transaction, TransactionInstruction, SystemProgram } from '@solana/web3.js';
+import { Transaction, TransactionInstruction } from '@solana/web3.js';
 import { appDb } from '@/lib/app-db';
 import { publicCreator } from '@/lib/public-creator';
 import { aliasConnection } from '@/lib/alias-network';
@@ -13,32 +13,28 @@ import { verifyUsdcPayment } from './usdc-payment';
 import { koraRpc, sponsorTipTransaction } from './kora';
 
 export async function buildTip(alias: string, wallet: string, amount: string, currencyValue?: unknown) {
-  const currency = tipCurrency(currencyValue);
+  if (currencyValue !== undefined && currencyValue !== 'USDC') throw new ApiError('Tips are only accepted in USDC.');
+  const currency = 'USDC';
   const creator = await publicCreator(alias);
   if (!creator || !creator.tipsEnabled) throw new ApiError('This creator is not receiving tips.', 404);
   const payer = walletKey(wallet);
   const recipient = walletKey(creator.wallet);
   if (payer.equals(recipient)) throw new ApiError('Use a different wallet to tip this creator.');
-  const units = currency === 'USDC' ? tipUsdcUnits(amount) : tipLamports(amount);
+  const units = tipUsdcUnits(amount);
   const connection = await aliasConnection();
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
-  let feePayer = payer;
-  if (currency === 'USDC') {
-    const { signer_address } = await koraRpc<{ signer_address: string }>('getPayerSigner');
-    feePayer = walletKey(signer_address);
-    if (feePayer.equals(payer) || feePayer.equals(recipient)) throw new ApiError('The sponsor must use a separate wallet.', 503);
-  }
+  const { signer_address } = await koraRpc<{ signer_address: string }>('getPayerSigner');
+  const feePayer = walletKey(signer_address);
+  if (feePayer.equals(payer) || feePayer.equals(recipient)) throw new ApiError('The sponsor must use a separate wallet.', 503);
   const transaction = new Transaction({ feePayer, blockhash, lastValidBlockHeight });
-  if (currency === 'USDC') {
-    const mint = new PublicKey(DEVNET_USDC_MINT);
-    const source = getAssociatedTokenAddressSync(mint, payer);
-    const destination = getAssociatedTokenAddressSync(mint, recipient);
-    transaction.add(createAssociatedTokenAccountIdempotentInstruction(feePayer, destination, recipient, mint));
-    transaction.add(createTransferCheckedInstruction(source, mint, destination, payer, units, 6));
-  } else transaction.add(SystemProgram.transfer({ fromPubkey: payer, toPubkey: recipient, lamports: units }));
+  const mint = new PublicKey(DEVNET_USDC_MINT);
+  const source = getAssociatedTokenAddressSync(mint, payer);
+  const destination = getAssociatedTokenAddressSync(mint, recipient);
+  transaction.add(createAssociatedTokenAccountIdempotentInstruction(feePayer, destination, recipient, mint));
+  transaction.add(createTransferCheckedInstruction(source, mint, destination, payer, units, 6));
   transaction.add(new TransactionInstruction({ programId: MEMO_PROGRAM, data: Buffer.from(`vynx:tip:${creator.id}`), keys: [] }));
-  const serialized = currency === 'USDC' ? await sponsorTipTransaction(transaction, wallet) : transaction.serialize({ requireAllSignatures: false }).toString('base64');
-  return { transaction: serialized, blockhash, lastValidBlockHeight, currency, units, lamports: currency === 'SOL' ? units : null, recipient: creator.wallet, sponsored: currency === 'USDC' };
+  const serialized = await sponsorTipTransaction(transaction, wallet);
+  return { transaction: serialized, blockhash, lastValidBlockHeight, currency, units, lamports: null, recipient: creator.wallet, sponsored: true };
 }
 export async function confirmTip(alias: string, wallet: string, amount: string, signature: string, currencyValue?: unknown) {
   const currency = tipCurrency(currencyValue);

@@ -78,7 +78,7 @@ export async function GET(request: Request) {
     if (query.has('id')) {
       const wallet = await requireWallet(request), id = query.get('id');
       if (!uuid(id)) throw new ApiError("Invalid booking.");
-      const { data, error } = await appDb().from('call_bookings').select('*').eq('id', id).eq('payer_wallet', wallet).maybeSingle();
+      const { data, error } = await appDb().from('call_bookings').select('*').eq('id', id).or(`payer_wallet.eq.${wallet},creator_wallet.eq.${wallet}`).maybeSingle();
       if (error) throw new ApiError("Could not recover the booking.", 503);
       if (!data) throw new ApiError('Booking not found.', 404);
       return reply({ booking: publicBooking(data) });
@@ -109,6 +109,12 @@ export async function POST(request: Request) {
       if (error) throw new ApiError("This slot is already booked or is no longer available.", 409, 'SLOT_UNAVAILABLE');
       return reply({ booking: publicBooking(data) });
     }
+    if (body.action === 'transition') {
+      if (!uuid(body.id) || !['completed', 'cancelled', 'no_show', 'disputed'].includes(body.state)) throw new ApiError('Invalid operation.');
+      const { data, error } = await db.rpc('transition_call_booking', { booking_id: body.id, actor: wallet, target: body.state });
+      if (error) throw new ApiError(error.code === 'P0002' ? 'Booking not found.' : 'Booking state change unavailable.', error.code === 'P0002' ? 404 : error.code === 'P0001' ? 409 : 503);
+      return reply({ booking: publicBooking(data) });
+    }
     if (!['checkout', 'confirm'].includes(body.action) || !uuid(body.id)) throw new ApiError("Invalid operation.");
     const { data: row, error } = await db.from('call_bookings').select('*').eq('id', body.id).eq('payer_wallet', wallet).maybeSingle();
     if (error) throw new ApiError("Could not load the booking.", 503);
@@ -118,7 +124,7 @@ export async function POST(request: Request) {
       if (typeof body.signature !== 'string') throw new ApiError('Signature required.');
       return reply({ booking: publicBooking(await confirm(b, body.signature)) });
     }
-    if (b.state === 'confirmed') return reply({ booking: publicBooking(b) });
+    if (b.payment_signature) return reply({ booking: publicBooking(b) });
     if (b.state !== 'awaiting_payment' || Date.parse(b.expires_at) <= Date.now()) throw new ApiError("The reservation expired. If you submitted payment, verify its signature.", 409, 'RESERVATION_EXPIRED');
     if (b.transaction) return reply({ booking: publicBooking(b), transaction: b.transaction });
     const payment = await buildBookingPayment(b);

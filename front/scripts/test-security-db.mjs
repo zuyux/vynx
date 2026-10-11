@@ -46,6 +46,8 @@ try {
   docker(sqlArgs, readFileSync('tests/security-db.sql', 'utf8'));
   docker(sqlArgs, readFileSync('tests/call-bookings-db.sql', 'utf8'));
   docker(sqlArgs, readFileSync('tests/call-video-db.sql', 'utf8'));
+  docker(sqlArgs, readFileSync('tests/booking-lifecycle-db.sql', 'utf8'));
+  docker(sqlArgs, readFileSync('tests/call-reviews-db.sql', 'utf8'));
   const concurrentSql = input => new Promise((resolve, reject) => {
     const child = spawn('docker', [...sqlArgs, '-tA'], { stdio: ['pipe', 'pipe', 'pipe'] });
     let output = '', error = '';
@@ -59,7 +61,35 @@ try {
   const retries = await Promise.all([concurrentSql(reserve('retry-fan','11 hours')), concurrentSql(reserve('retry-fan','11 hours'))]);
   assert.ok(retries.every(result => result.code === 0), 'concurrent retries both succeed');
   assert.equal(retries[0].output, retries[1].output, 'concurrent retries return the same booking');
-  console.info('All migrations passed: private tables/RPCs, inherited grants, service-role access, future defaults, and creator Storage policies verified.');
+  const retryBooking = `(select id from public.call_bookings where payer_wallet='retry-fan')`;
+  const checkout = (transaction, height) => `set role service_role; select public.prepare_call_payment(${retryBooking},'retry-fan','${transaction}',${height});`;
+  const checkouts = await Promise.all([concurrentSql(checkout('checkout-one',101)), concurrentSql(checkout('checkout-two',202))]);
+  assert.ok(checkouts.every(result => result.code === 0), 'concurrent checkout requests succeed');
+  assert.equal(checkouts[0].output, checkouts[1].output, 'checkout retries preserve the winning transaction and block height');
+  const confirm = signature => `set role service_role; select public.confirm_call_payment(${retryBooking},'retry-fan','${signature}');`;
+  const payments = await Promise.all([concurrentSql(confirm('race-payment-one')), concurrentSql(confirm('race-payment-two'))]);
+  assert.equal(payments.filter(result => result.code === 0).length, 1, 'one conflicting payment confirmation wins');
+  assert.match(payments.find(result => result.code !== 0).error, /Different payment already confirmed/);
+  const paymentWinner = payments[0].code === 0 ? 'race-payment-one' : 'race-payment-two';
+  const paymentRetries = await Promise.all([concurrentSql(confirm(paymentWinner)), concurrentSql(confirm(paymentWinner))]);
+  assert.ok(paymentRetries.every(result => result.code === 0), 'concurrent identical payment confirmations succeed');
+  assert.equal(paymentRetries[0].output, paymentRetries[1].output, 'payment retries preserve the booking');
+  const event = timestamp => `set role service_role; select public.record_call_video_event((select booking_id from public.call_video_rooms where booking_id=(select id from public.call_bookings where payer_wallet='fan-one')),'race-attendance','meeting.started',${timestamp},jsonb_build_object('room',(select room_name from public.call_video_rooms where booking_id=(select id from public.call_bookings where payer_wallet='fan-one'))));`;
+  const eventRace = await Promise.all([concurrentSql(event(100)), concurrentSql(event(200))]);
+  assert.equal(eventRace.filter(result => result.code === 0).length, 1, 'one conflicting attendance event wins');
+  assert.match(eventRace.find(result => result.code !== 0).error, /Conflicting event ID/);
+  const eventWinner = eventRace[0].code === 0 ? 100 : 200;
+  const eventRetries = await Promise.all([concurrentSql(event(eventWinner)), concurrentSql(event(eventWinner))]);
+  assert.ok(eventRetries.every(result => result.code === 0), 'concurrent identical attendance deliveries succeed');
+  assert.equal(docker([...sqlArgs, '-tA'], "select count(*) from public.call_video_events where event_id='race-attendance';").trim(), '1', 'attendance retries store one event');
+  const submitReview = rating => `set role service_role; select public.submit_call_review((select id from public.call_bookings where payer_wallet='race-review-fan'),'race-review-fan',${rating},4,4,4,'Concurrent feedback');`;
+  const reviewRace = await Promise.all([concurrentSql(submitReview(1)), concurrentSql(submitReview(5))]);
+  assert.equal(reviewRace.filter(result => result.code === 0).length, 1, 'one concurrent review wins');
+  assert.match(reviewRace.find(result => result.code !== 0).error, /A review already exists/);
+  const winner = reviewRace[0].code === 0 ? 1 : 5;
+  const reviewRetries = await Promise.all([concurrentSql(submitReview(winner)), concurrentSql(submitReview(winner))]);
+  assert.ok(reviewRetries.every(result => result.code === 0), 'concurrent identical review retries succeed');
+  console.info('All migrations passed: permissions, booking lifecycle, concurrent slots/payment/attendance retries, review eligibility/aggregation, and creator Storage policies verified.');
 } finally {
   if (started) docker(['stop', name]);
 }

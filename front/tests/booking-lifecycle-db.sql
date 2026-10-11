@@ -1,0 +1,38 @@
+set role service_role;
+do $$
+declare b public.call_bookings; r jsonb; room public.call_video_rooms; n bigint;
+begin
+  select * into b from public.call_bookings where payer_wallet='fan-one' limit 1;
+  begin perform public.transition_call_booking(b.id,'outsider','completed'); raise exception 'Outsider accepted';
+    exception when no_data_found then null; end;
+  begin perform public.transition_call_booking(b.id,b.creator_wallet,'completed'); raise exception 'Early completion accepted';
+    exception when raise_exception then if sqlerrm <> 'Call has not ended or state is final' then raise; end if; end;
+  update public.call_bookings set starts_at=now()-interval '2 hours',ends_at=now()-interval '1 hour' where id=b.id;
+  begin perform public.transition_call_booking(b.id,b.creator_wallet,'completed'); raise exception 'Creator completion accepted';
+    exception when raise_exception then if sqlerrm <> 'Only the payer can acknowledge completion' then raise; end if; end;
+  perform public.transition_call_booking(b.id,b.payer_wallet,'completed');
+  perform public.transition_call_booking(b.id,b.payer_wallet,'completed');
+  select count(*) into n from public.call_booking_transitions where booking_id=b.id;
+  if n <> 1 then raise exception 'Duplicate transition'; end if;
+  r:=public.confirm_call_payment(b.id,b.payer_wallet,b.payment_signature);
+  if r->>'state' <> 'completed' then raise exception 'Payment replay reset state'; end if;
+  perform public.transition_call_booking(b.id,b.creator_wallet,'disputed');
+  begin perform public.transition_call_booking(b.id,b.payer_wallet,'completed'); raise exception 'Dispute overwritten';
+    exception when raise_exception then if sqlerrm <> 'Call has not ended or state is final' then raise; end if; end;
+  insert into public.call_video_rooms(booking_id) values(b.id) on conflict do nothing;
+  select * into room from public.call_video_rooms where booking_id=b.id;
+  perform public.record_call_video_event(b.id,'lifecycle-event','meeting.started',123,jsonb_build_object('room',room.room_name));
+  perform public.record_call_video_event(b.id,'lifecycle-event','meeting.started',123,jsonb_build_object('room',room.room_name));
+  begin perform public.record_call_video_event(b.id,'lifecycle-event','meeting.started',124,jsonb_build_object('room',room.room_name)); raise exception 'Conflicting event accepted';
+    exception when unique_violation then null; end;
+  update public.call_bookings set state='confirmed',starts_at=now()+interval '2 days',ends_at=now()+interval '2 days 1 hour' where id=b.id;
+  perform public.transition_call_booking(b.id,b.creator_wallet,'cancelled');
+  r:=public.confirm_call_payment(b.id,b.payer_wallet,b.payment_signature);
+  if r->>'state' <> 'cancelled' then raise exception 'Cancelled booking reopened'; end if;
+  update public.call_bookings set state='confirmed',starts_at=now()-interval '2 hours',ends_at=now()-interval '1 hour' where id=b.id;
+  perform public.transition_call_booking(b.id,b.creator_wallet,'no_show');
+  update public.call_bookings set ends_at=now()-interval '25 hours', starts_at=now()-interval '26 hours' where id=b.id;
+  begin perform public.transition_call_booking(b.id,b.payer_wallet,'disputed'); raise exception 'Late dispute accepted';
+    exception when raise_exception then if sqlerrm <> 'Dispute unavailable' then raise; end if; end;
+end $$;
+reset role;

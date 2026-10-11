@@ -4,7 +4,6 @@ import { SITE_MOTTO } from '@/lib/brand';
 import { PaymentDisclosure } from '@/components/PaymentDisclosure';
 import { UserFacingError, userErrorMessage } from '@/lib/user-facing-error';
 
-import { sendDevnetTransaction } from '@/lib/devnet-wallet';
 import Link from 'next/link';
 import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowDownLeft, ArrowUpRight, Inbox, RefreshCw, SlidersHorizontal, Sparkles } from 'lucide-react';
@@ -24,7 +23,7 @@ const statuses = { pending: "Under review", approved: "Awaiting payment", reject
 const statusColors = { pending: 'bg-amber-400/10 text-amber-200', approved: 'bg-violet-400/10 text-violet-200', active: 'bg-emerald-400/10 text-emerald-200', ended: 'bg-white/5 text-zinc-400', rejected: 'bg-red-400/10 text-red-200' };
 
 export default function SponsorshipWorkspace() {
-  const { wallet, solana, signed } = useSponsorshipWallet();
+  const { wallet, solana, signed, sendTransaction } = useSponsorshipWallet();
   const claimed = useClaimedAlias(wallet);
   const [profile, setProfile] = useState<SponsorProfile | null>(null);
   const [campaigns, setCampaigns] = useState<SponsorRequest[]>([]);
@@ -88,7 +87,7 @@ export default function SponsorshipWorkspace() {
     if (payment?.id === campaign.id || savedSignature) throw new UserFacingError("You already submitted a payment. Verify its signature before paying again.");
     const data = await signed('checkout', { id: campaign.id });
     const tx = Transaction.from(Uint8Array.from(atob(data.transaction), c => c.charCodeAt(0)));
-    const { signature } = await sendDevnetTransaction(tx, wallet);
+    const { signature } = await sendTransaction(tx, wallet);
     setPayment({ id: campaign.id, signature });
     // Persist only the recovery reference, never credentials or signing material.
     try { localStorage.setItem(`vynx-payment:${campaign.id}`, signature); } catch { /* Optional recovery storage. */ }

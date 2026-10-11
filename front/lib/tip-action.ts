@@ -1,6 +1,6 @@
 import { ALIAS_BLOCKCHAIN_ID } from './alias-network';
 import { normalizeAlias } from './alias';
-import { tipLamports } from './sol-payment';
+import { tipUsdcUnits } from './tip-currency';
 import { apiFailure, ApiError } from './wallet-session';
 
 export const TIP_ACTION_HEADERS = {
@@ -16,9 +16,9 @@ export const TIP_ACTION_HEADERS = {
 export function tipActionParameters(request: Request, aliasValue: string) {
   const alias = normalizeAlias(aliasValue);
   const params = new URL(request.url).searchParams;
-  if (params.has('currency') && params.get('currency') !== 'SOL') throw new ApiError('Public tip Actions support devnet SOL. Use the creator page for USDC.');
-  const amount = params.get('amount') ?? '0.01';
-  tipLamports(amount);
+  if (params.has('currency') && params.get('currency') !== 'USDC') throw new ApiError('Tips are only accepted in USDC.');
+  const amount = params.get('amount') ?? '1';
+  tipUsdcUnits(amount);
   return { alias, amount, href: `/api/actions/tip/${alias}` };
 }
 

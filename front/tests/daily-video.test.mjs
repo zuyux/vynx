@@ -1,12 +1,43 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
-import { attendance, assertPrivateRoom, callWindow, roomProperties, tokenProperties, verifyDailyWebhook, normalizedEvent, boundedJSON } from '../lib/daily-video.ts';
+import { attendance, verifiedCompletion, assertPrivateRoom, callWindow, roomProperties, tokenProperties, verifyDailyWebhook, normalizedEvent, boundedJSON } from '../lib/daily-video.ts';
 const room = { room_name: 'vynx-private', creator_user_id: 'creator', fan_user_id: 'fan' };
 const start = new Date(1000000).toISOString(), end = new Date(1600000).toISOString();
 const event = (type, payload) => ({ event_id: `${type}:${JSON.stringify(payload)}`, event_type: type, event_ts: 1700, payload: { room: room.room_name, ...payload } });
 const session = (user, id, join, duration) => [event('participant.joined', {user_id:user,session_id:id,joined_at:join}), event('participant.left', {user_id:user,session_id:id,joined_at:join,duration})];
 const meeting = event('meeting.ended', {meeting_id:'meeting',start_ts:900,end_ts:1700});
+test('completion requires an ended session and 90% simultaneous attendance by both participants', () => {
+ const evaluate = events => verifiedCompletion(attendance(events,room,start,end),start,end,1700000);
+ const atThreshold=[meeting,...session('creator','c',1000,600),...session('fan','f',1000,540)];
+ assert.equal(evaluate(atThreshold).status,'verified');
+ assert.equal(evaluate([meeting,...session('creator','c',1000,600),...session('fan','f',1000,539.999)]).status,'below_threshold');
+ assert.equal(evaluate([meeting,...session('creator','c',1000,600)]).status,'below_threshold');
+ // Both attend long enough individually, but their shared time is insufficient.
+ assert.equal(evaluate([meeting,...session('creator','c',900,640),...session('fan','f',1061,639)]).status,'below_threshold');
+ assert.equal(verifiedCompletion(attendance(atThreshold,room,start,end),start,end,1599999).status,'pending');
+ assert.equal(verifiedCompletion(attendance(atThreshold,room,start,end),start,end,1600000).status,'verified');
+ assert.equal(evaluate([...atThreshold].reverse().concat(atThreshold)).status,'verified');
+});
+test('missing, ambiguous or truncated evidence requires review even above the threshold', () => {
+ const complete=attendance([meeting,...session('creator','c',1000,600),...session('fan','f',1000,600)],room,start,end);
+ for(const evidence of [null,{...complete,evidence_status:'incomplete',gaps:['incomplete_session']},{...complete,evidence_status:'incomplete',gaps:['event_limit']}]) {
+  assert.equal(verifiedCompletion(evidence,start,end,1700000).status,'review_required');
+ }
+ assert.equal(verifiedCompletion(complete,end,start,1700000).status,'review_required');
+ const verified=verifiedCompletion(complete,start,end,1700000);
+ assert.equal(verified.policy,'attendance-v1');assert.equal(verified.required_seconds,540);
+ assert.equal(complete.settlement_eligible,false);
+ assert.equal('rating' in verified,false);assert.equal('satisfaction' in verified,false);
+});
+test('contradictory meeting boundaries cannot verify completion regardless of delivery order', () => {
+ const events=[meeting,event('meeting.ended',{meeting_id:'meeting',start_ts:901,end_ts:1701}),...session('creator','c',1000,600),...session('fan','f',1000,600)];
+ for(const ordered of [events,[...events].reverse()]) {
+  const evidence=attendance(ordered,room,start,end);
+  assert.ok(evidence.gaps.includes('conflicting_meeting'));
+  assert.equal(verifiedCompletion(evidence,start,end,1700000).status,'review_required');
+ }
+});
 test('private room and participant tokens bind access to the booking and time window', () => {
  const config = roomProperties(start,end); assert.equal(config.max_participants,2); assert.equal(config.enable_knocking,false);
  const provider={name:room.room_name,privacy:'private',url:`https://vynx.daily.co/${room.room_name}`,config};

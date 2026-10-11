@@ -62,3 +62,30 @@ test('resolver outage recovery refunds even disputed funds and prevents late res
 test('only deployment authority may initialize configuration',()=>{
  const f=fixture();f.fail(f.send(c.initialize(f.stranger.publicKey,f.stranger.publicKey,f.stranger.publicKey,f.mint),[f.stranger]));
 });
+test('payer refund includes the cancellation deadline and rejects outsiders without moving funds',()=>{
+ const f=fixture();f.ok(f.send(f.fund(),[f.payer,f.quote]));
+ f.fail(f.settle('refund',f.stranger));
+ f.time(100000-86400);f.ok(f.settle('refund',f.payer));
+ assert.equal(f.balance(f.source),100000000n);assert.equal(f.balance(f.destination),0n);assert.equal(f.balance(c.vault(f.id)),0n);
+ f.fail(f.settle('refund',f.payer));f.fail(f.settle('resolve',f.resolver));
+ assert.equal(f.balance(f.source),100000000n);
+});
+test('normal settlement waits past the dispute deadline and conserves funds for every allocation',()=>{
+ for(const amount of [0n,400000n,1000000n]){
+  const f=fixture();f.ok(f.send(f.fund(),[f.payer,f.quote]));
+  f.time(101800+86400);f.fail(f.settle('resolve',f.resolver,amount));
+  assert.equal(f.balance(c.vault(f.id)),1000000n);
+  f.time(101800+86400+1);f.ok(f.settle('resolve',f.resolver,amount));
+  assert.equal(f.balance(f.destination),amount);assert.equal(f.balance(f.source),100000000n-amount);assert.equal(f.balance(c.vault(f.id)),0n);
+  f.fail(f.settle('resolve',f.resolver,amount));f.fail(f.settle('refund',f.creator));
+  assert.equal(f.balance(f.destination),amount);assert.equal(f.balance(f.source),100000000n-amount);
+ }
+});
+test('disputed recovery becomes refundable exactly at its deadline',()=>{
+ const f=fixture();f.ok(f.send(f.fund(),[f.payer,f.quote]));f.ok(f.send(c.dispute(f.payer.publicKey,f.id),[f.payer]));
+ f.time(101800+30*86400-1);f.fail(f.settle('refund',f.payer));f.fail(f.settle('refund',f.creator));
+ assert.equal(f.balance(c.vault(f.id)),1000000n);
+ f.time(101800+30*86400);f.fail(f.settle('refund',f.stranger));f.ok(f.settle('refund',f.payer));
+ assert.equal(f.balance(f.source),100000000n);assert.equal(f.balance(c.vault(f.id)),0n);
+ f.fail(f.settle('resolve',f.resolver,1000000n));assert.equal(f.balance(f.destination),0n);
+});

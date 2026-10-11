@@ -7,7 +7,7 @@ import { ApiError } from './wallet-session';
 
 export type CallBooking = {
   id: string; offer_id: string; creator_wallet: string; payer_wallet: string; starts_at: string; ends_at: string;
-  expires_at: string; terms: Record<string, unknown>; price_units: number; state: 'awaiting_payment' | 'confirmed' | 'expired';
+  expires_at: string; terms: Record<string, unknown>; price_units: number; state: 'awaiting_payment' | 'confirmed' | 'completed' | 'cancelled' | 'no_show' | 'disputed' | 'expired';
   transaction: string | null; last_valid_block_height: number | null; payment_signature: string | null;
 };
 export const discriminator = (kind: string, name: string) => createHash('sha256').update(`${kind}:${name}`).digest().subarray(0, 8);

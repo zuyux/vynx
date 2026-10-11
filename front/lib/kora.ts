@@ -3,7 +3,7 @@ import { ApiError } from './wallet-session';
 
 export async function koraRpc<T>(method: string, params: Record<string, unknown> = {}): Promise<T> {
   const endpoint = process.env.KORA_RPC_URL?.trim();
-  if (!endpoint) throw new ApiError('Sponsored USDC tips are not available yet. Please try again later or choose SOL.', 503);
+  if (!endpoint) throw new ApiError('Sponsored USDC tips are not available yet. Please try again later.', 503);
   try {
     const response = await fetch(endpoint, {
       method: 'POST', cache: 'no-store', signal: AbortSignal.timeout(15_000),
