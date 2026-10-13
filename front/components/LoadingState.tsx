@@ -1,13 +1,13 @@
 
 import { useCopy } from "@/i18n/copy";
-export function LoadingState({ label }: { label?: string }) {
+export function LoadingState({ label, fullPage = false }: { label?: string; fullPage?: boolean }) {
   const t = useCopy();
-  return <div role="status" aria-live="polite" aria-busy="true" className="mx-auto w-full max-w-3xl p-6">
-    <p className={label ? 'text-sm text-zinc-300' : 'sr-only'}>{t(label ?? 'Loading…')}</p>
-    <div aria-hidden="true" className={`${label ? 'mt-6 ' : ''}space-y-4 motion-safe:animate-pulse`}>
-      <div className="h-8 w-2/3 rounded-xl bg-white/10" />
-      <div className="h-40 rounded-2xl bg-white/5" />
-      <div className="h-20 rounded-2xl bg-white/5" />
-    </div>
+  return <div role="status" aria-live="polite" aria-busy="true" className={`mx-auto flex w-full max-w-3xl flex-col items-center justify-center gap-4 p-6 ${fullPage ? 'min-h-[calc(100svh-4rem)]' : 'min-h-40'}`}>
+    <span aria-hidden="true" className="relative flex size-12 items-center justify-center">
+      <span className="absolute inset-0 rounded-full border-[3px] border-violet-400/15" />
+      <span className="absolute inset-0 rounded-full border-[3px] border-transparent border-r-violet-400/40 border-t-violet-400 motion-safe:animate-spin" />
+      <span className="size-1.5 rounded-full bg-violet-300" />
+    </span>
+    <p className="sr-only">{t(label ?? 'Loading…')}</p>
   </div>;
 }
