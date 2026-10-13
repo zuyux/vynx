@@ -1,4 +1,34 @@
-# VYNX
+<p align="center">
+  <img src="logo.svg" alt="VYNX logo" width="136" height="100" />
+</p>
+
+<h1 align="center">VYNX</h1>
+
+<p align="center">
+  <strong>Creator cards and direct support on Solana</strong><br />
+  Claim your alias, publish your profile, and receive tips from fans.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/version-v0.1.0-2563eb?style=flat-square" alt="Version: v0.1.0" />
+  <img src="https://img.shields.io/badge/network-Solana%20devnet-7c3aed?style=flat-square" alt="Network: Solana devnet" />
+  <img src="https://img.shields.io/badge/status-MVP-f59e0b?style=flat-square" alt="Status: MVP" />
+  <img src="https://img.shields.io/badge/license-AGPLv3-0f766e?style=flat-square" alt="License: AGPLv3" />
+  <img src="https://img.shields.io/badge/framework-Next.js-374151?style=flat-square" alt="Framework: Next.js" />
+</p>
+
+<p align="center">
+  <a href="#local-setup">Quick start</a> ·
+  <a href="#creator-and-fan-flow">Creator &amp; fan flow</a> ·
+  <a href="#validation">Validation</a> ·
+  <a href="#database-setup">Database setup</a> ·
+  <a href="#product-scope">Product scope</a> ·
+  <a href="#documentation">Documentation</a>
+</p>
+
+---
+
+## Overview
 
 VYNX is a Solana creator-card application. The current MVP lets creators connect a Phantom wallet, claim an alias, publish a profile, and receive SOL tips.
 
@@ -134,15 +164,13 @@ Creators will be able to offer video calls with a defined service, duration, pri
 
 This feature is planned for after the alias-to-tip MVP is validated and is not implemented yet. See the paid video-call milestone in [DEVROAD.MD](DEVROAD.MD).
 
-## License
-
-GNU AGPLv3. See `LICENSE` when present in the distribution.
-
-### Creator image storage
+## Creator image storage
 
 Before testing creator image saves, configure the `creator-images` Supabase Storage bucket using the [setup procedure](docs/creator-image-storage.md). The server accepts PNG, JPEG and WebP up to 1 MB and 6000 pixels per side, checks wallet ownership, and saves Storage URLs to the profile. Existing inline images migrate when their owner next saves. Apply [migration 007](front/supabase/migrations/007_creator_image_cleanup.sql) before deploying the cleanup-enabled save flow. No additional environment variables are needed. [Image cleanup operations](docs/creator-image-cleanup.md) cover safe replacement deletion and retry.
 
 Creator activity privacy: the card editor’s Perfil tab lets creators opt in to showing payer addresses in their authenticated tip activity. Addresses are hidden by default for existing and new creators, and the dashboard API omits them while hidden. Save the profile to apply the preference to past and future tips. Solana transactions and explorer links remain public. Apply `front/supabase/migrations/009_creator_activity_privacy.sql` before deploying this change.
+
+## Documentation
 
 Public creator links also support devnet SOL tips through `/api/actions/tip/:alias`, discoverable via `actions.json`. See [public tip Actions](docs/tip-actions.md) for URLs, request payloads, confirmation callbacks and client support.
 
@@ -151,3 +179,7 @@ Creator video-call offer setup and payment dependencies: [call offers](docs/call
 AI-first dispute resolution and video-provider prototype: [feature specification](docs/ai-dispute-resolution-spec.md).
 
 Daily operating funds and automatic billing: [treasury specification](docs/daily-operating-treasury-spec.md).
+
+## License
+
+GNU AGPLv3. See `LICENSE` when present in the distribution.
