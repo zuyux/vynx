@@ -1,4 +1,5 @@
 'use client';
+import { CREATOR_ACCENTS } from '@/lib/creator-draft';
 import { SITE_MOTTO } from '@/lib/brand';
 import CallBookingPanel from './CallBookingPanel';
 import { Instagram, Youtube } from '@/components/CardIcons';
@@ -22,7 +23,7 @@ export function CreatorPublicView({ profile, ad, design, preview = false, onRequ
 }) {
   const { wallet, open } = useSponsorshipWallet();
   const [description, setDescription] = useState('');
-  const accent = design ? {mint:'#00F5A0',violet:'#b69aff',rose:'#ff94b9'}[design.accent] : '#00F5A0';
+  const accent = design ? CREATOR_ACCENTS[design.accent] : '#00F5A0';
   const light = design?.theme === 'light';
   const card = `rounded-3xl border border-current/10 ${light ? 'bg-white' : 'bg-[#101015]'}`;
   const button = `inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold transition hover:brightness-110 disabled:opacity-70 ${design?.rounded === false ? 'rounded-md' : 'rounded-xl'}`;

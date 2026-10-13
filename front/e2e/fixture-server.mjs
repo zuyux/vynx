@@ -11,6 +11,7 @@ export async function fixtureServer(databaseUrl, registryOptions, storageKey) {
   const objects = new Map();
   let failStorageDeletes = 0;
   const ledger = new Map();
+  const rawMessages = new Map();
   const koraSigner = Keypair.generate();
   const delays = new Map();
   let slot = 1;
@@ -109,6 +110,7 @@ export async function fixtureServer(databaseUrl, registryOptions, storageKey) {
           if (instruction.programId.toBase58() === MEMO) return { program: 'spl-memo', programId: MEMO, parsed: instruction.data.toString() };
           throw new Error('Unexpected instruction in test payment.');
         });
+        rawMessages.set(signature, { header: message.header, accountKeys: keys.map(key => key.toBase58()), instructions: message.instructions, recentBlockhash: message.recentBlockhash });
         delays.set(signature, body.delay ?? 0);
         ledger.set(signature, { slot: slot++, blockTime: Math.floor(Date.now() / 1000), version: 'legacy', meta: { err: body.failed ? { InstructionError: [0, 'Custom'] } : null, fee: 5000, preBalances: pre, postBalances: post, preTokenBalances, postTokenBalances, innerInstructions: [], logMessages: [] }, transaction: { signatures: tx.signatures.map(item => bs58.encode(item.signature)), message: { accountKeys: keys.map((key, index) => ({ pubkey: key.toBase58(), signer: message.isAccountSigner(index), writable: message.isAccountWritable(index), source: 'transaction' })), instructions, recentBlockhash: tx.recentBlockhash } } });
         response.setHeader('Content-Type', 'application/json'); response.end(JSON.stringify({ signature })); return;
@@ -120,14 +122,23 @@ export async function fixtureServer(databaseUrl, registryOptions, storageKey) {
         response.setHeader('Content-Type', 'application/json'); response.end(JSON.stringify({ jsonrpc: '2.0', id: rpc.id, result: registryResult })); return;
       }
       switch (rpc.method) {
+        case 'getSlot': result = slot; break;
         case 'getGenesisHash': result = GENESIS; break;
         case 'getLatestBlockhash': result = { context: { slot }, value: { blockhash: Keypair.generate().publicKey.toBase58(), lastValidBlockHeight: 100000 } }; break;
         case 'getTransaction': {
           const pending = delays.get(rpc.params[0]) ?? 0;
           if (pending > 0) delays.set(rpc.params[0], pending - 1);
-          result = pending > 0 ? null : ledger.get(rpc.params[0]) ?? null; break;
+          result = pending > 0 ? null : ledger.get(rpc.params[0]) ?? null;
+          if (result && rpc.params[1]?.encoding !== 'jsonParsed') result = { ...result, transaction: { ...result.transaction, message: rawMessages.get(rpc.params[0]) } };
+          break;
         }
         case 'getSignatureStatuses': result = { context: { slot }, value: rpc.params[0].map(signature => ledger.has(signature) ? { slot, confirmations: null, err: ledger.get(signature).meta.err, confirmationStatus: 'finalized' } : null) }; break;
+        case 'getSignaturesForAddress': {
+          let history = [...ledger.entries()].filter(([,tx]) => tx.transaction.message.accountKeys.some(key => key.pubkey === rpc.params[0])).sort((a,b) => b[1].slot-a[1].slot);
+          if (rpc.params[1]?.before) history = history.slice(history.findIndex(([signature]) => signature === rpc.params[1].before)+1);
+          result = history.slice(0,rpc.params[1]?.limit ?? 1000).map(([signature,tx]) => ({ signature,slot:tx.slot,err:tx.meta.err,memo:null,blockTime:tx.blockTime,confirmationStatus:'finalized' }));
+          break;
+        }
         case 'getBlockHeight': result = slot; break;
         default: throw new Error(`Unexpected RPC call: ${rpc.method}`);
       }

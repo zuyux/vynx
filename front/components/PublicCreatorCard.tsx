@@ -1,22 +1,31 @@
 'use client';
-import { SITE_MOTTO } from '@/lib/brand';
+import styles from './PublicCreatorCard.module.css';
+import { sessionDurationLabel } from '@/lib/offer-terms';
+import type { CSSProperties } from 'react';
+import { CREATOR_ACCENTS } from '@/lib/creator-draft';
 import { UserFacingError, userErrorMessage, responseError } from '@/lib/user-facing-error';
 import { Instagram, Profile, Youtube } from '@/components/CardIcons';
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import { ArrowUpRight, Heart, ImagePlus, Link2, Pencil, Share2, UserRound, X } from 'lucide-react';
+import { useRef, useState, type ChangeEvent, type FormEvent, type PointerEvent } from 'react';
+import { ArrowUpRight, Globe, Heart, ImagePlus, Link2, Pencil, Share2, UserRound, X } from 'lucide-react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import MonthlyPlans from './MonthlyPlans';
+import OfferCheckout from './OfferCheckout';
 import CallBookingPanel from '@/components/CallBookingPanel';
 import { TipForm } from '@/components/TipForm';
 import { useWalletSession } from '@/components/WalletSessionProvider';
-import { draftFromProfile, safeLink, type CreatorDraft } from '@/lib/creator-draft';
+import { draftFromProfile, safeLink, type CreatorDraft, type CreatorOffer } from '@/lib/creator-draft';
 import type { PublicCreator } from '@/lib/public-creator';
 import CreatorCallHistory from './CreatorCallHistory';
 
 type EditableText = 'name' | 'bio';
+function OfferRowContents({ offer }: { offer: CreatorOffer }) {
+  return <><Link2 size={21} className="shrink-0 text-violet-400" aria-hidden="true" /><span className="min-w-0 flex-1"><span className="block break-words font-medium">{offer.title || 'Offer title'}</span>{offer.description && <span className="mt-1 block whitespace-pre-line break-words text-xs text-white/60">{offer.description}</span>}{offer.price && <span className="mt-1 block break-words text-xs text-violet-200">{offer.price} USDC{offer.billingPeriod && ` / ${offer.billingPeriod === 'month' ? 'month' : 'session'}`}</span>}{offer.type === 'bookings' && offer.durationMinutes && <span className="mt-1 block text-xs text-white/70">{sessionDurationLabel(offer.durationMinutes)} per session</span>}{offer.billingPeriod === 'month' && <span className="mt-1 block text-xs text-white/60">Payment approval required each month</span>}</span><ArrowUpRight size={16} className="shrink-0 text-white/40" aria-hidden="true" /></>;
+}
+
 
 export function PublicCreatorCard({ creator, preview = false, embedded = false }: { creator: PublicCreator; preview?: boolean; embedded?: boolean }) {
   const [savedDesign, setDesign] = useState(creator.design);
@@ -31,7 +40,28 @@ export function PublicCreatorCard({ creator, preview = false, embedded = false }
   const [failed, setFailed] = useState(false);
   const Container = embedded ? 'div' : 'main';
   const light = design.theme === 'light';
-  const accent = { mint: '#00F5A0', violet: '#b69aff', rose: '#ff94b9' }[design.accent];
+  const [siteLink, ...otherLinks] = design.links.filter(link => safeLink(link.url));
+  const accent = CREATOR_ACCENTS[design.accent];
+  const appearanceStyle = { "--card-accent": accent, "--card-accent-ink": light && ['white', 'yellow', 'cyan', 'mint'].includes(design.accent) ? '#52525b' : !light && design.accent === 'black' ? '#a1a1aa' : accent } as CSSProperties;
+  function resetCardPressure(stage: HTMLDivElement) {
+    delete stage.dataset.pressed;
+    for (const property of ['--card-tilt-x', '--card-tilt-y', '--card-press-z']) stage.style.removeProperty(property);
+  }
+  function pressCard(event: PointerEvent<HTMLDivElement>) {
+    const stage = event.currentTarget;
+    if (event.pointerType === 'touch' || !window.matchMedia('(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)').matches) {
+      resetCardPressure(stage); return;
+    }
+    // Measure the stationary frame so tilting the card cannot shift its target.
+    const bounds = stage.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+    const x = Math.max(-1, Math.min(1, (event.clientX - bounds.left) / bounds.width * 2 - 1));
+    const y = Math.max(-1, Math.min(1, (event.clientY - bounds.top) / bounds.height * 2 - 1));
+    stage.style.setProperty('--card-tilt-x', `${-y * 8}deg`);
+    stage.style.setProperty('--card-tilt-y', `${x * 8}deg`);
+    stage.style.setProperty('--card-press-z', `${-6 - Math.hypot(x, y) / Math.SQRT2 * 12}px`);
+    stage.dataset.pressed = 'true';
+  }
 
   async function saveChange(change: Partial<Pick<CreatorDraft, 'name' | 'bio' | 'avatar'>>) {
     if (!isOwner || await session.ensureSession() !== creator.wallet) throw new UserFacingError('Sign in with the wallet that owns this card.');
@@ -95,21 +125,32 @@ export function PublicCreatorCard({ creator, preview = false, embedded = false }
     </label><div className="grid grid-cols-1 gap-2 sm:grid-cols-2"><button disabled={busy} className="min-h-11 rounded-xl bg-violet-400 px-3 py-2 text-sm font-semibold text-black disabled:opacity-50">{busy ? 'Saving…' : 'Save changes'}</button><button type="button" disabled={busy} onClick={() => setEditing(null)} className="min-h-11 rounded-xl border border-white/20 px-3 py-2 text-sm">Cancel</button></div>
   </form>;
 
-  return <Container id={embedded ? undefined : "main-content"} tabIndex={embedded ? undefined : -1} className={`${embedded ? "p-3" : "min-h-screen px-4 pb-5 sm:px-6 sm:pb-7"} ${light ? 'bg-[#f5f5f7] text-zinc-900' : 'bg-[#08080b] text-white'}`}>
+  return <Container id={embedded ? undefined : "main-content"} tabIndex={embedded ? undefined : -1} className={`${embedded ? "p-3" : "min-h-screen px-4 pb-5 sm:px-6 sm:pb-7"} ${light ? 'bg-white text-zinc-900' : 'bg-[#08080b] text-white'}`}>
     {!embedded && <nav aria-label="Page navigation" className="mt-2 mb-3 flex w-full items-center justify-between gap-4">
       <Link href="/" aria-label="VYNX home" className="flex min-h-11 min-w-11 items-center rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current"><Image src="/logo-white.svg" alt="" width={22} height={16} className={`h-4 w-auto${light ? ' brightness-0' : ''}`} /></Link>
       <Link href="/dashboard" aria-label="My profile" title="My profile" className="flex size-11 items-center justify-center rounded-full border border-current/10 opacity-70 transition hover:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current"><Profile size={20} aria-hidden="true" /></Link>
     </nav>}
     <div className="mx-auto max-w-[460px]">
-      <section aria-label="Creator card" data-testid="creator-card" className="relative isolate flex aspect-[1/1.618] w-full flex-col overflow-hidden rounded-[2rem] border border-violet-400/30 bg-[#17131e] text-white shadow-[0_24px_80px_-24px_#a855f755]">
-        {design.avatar ? <Image src={design.avatar} alt={`${design.name} avatar`} fill sizes="(max-width: 492px) calc(100vw - 32px), 460px" priority unoptimized className="-z-20 object-cover object-top" /> : <div className="absolute inset-0 -z-20 flex items-start justify-center bg-[radial-gradient(ellipse_at_top,#643676_0%,#241b30_45%,#17131e_80%)] pt-[18%]"><UserRound size={96} className="text-violet-200/25" aria-hidden="true" /></div>}
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(12,8,18,0.04)_0%,rgba(18,12,25,0.15)_25%,rgba(22,17,30,0.6)_48%,rgba(23,19,30,0.8)_80%)]" />
-        <span className="absolute top-5 right-5 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-xs text-violet-100 backdrop-blur-md">@{creator.alias}</span>
+      <div className={styles.cardStage} onPointerMove={pressCard} onPointerLeave={event => resetCardPressure(event.currentTarget)} onPointerCancel={event => resetCardPressure(event.currentTarget)}>
+      <section aria-label="Creator card" data-testid="creator-card" data-light={light} data-card-glow={design.cardGlow ?? false} data-button-glow={design.buttonGlow ?? false} data-rounded={design.rounded} style={appearanceStyle} className={`${styles.card} relative isolate flex aspect-[1/1.618] w-full flex-col overflow-hidden rounded-[2rem] border border-violet-400/30 bg-[#17131e] text-white shadow-[0_24px_80px_-24px_#a855f755]`}>
+        {design.avatar ? <Image src={design.avatar} alt={`${design.name} avatar`} fill sizes="(max-width: 492px) calc(100vw - 32px), 460px" priority unoptimized className="-z-20 object-cover object-top" /> : <div className={`${styles.placeholder} absolute inset-0 -z-20 flex items-start justify-center bg-[radial-gradient(ellipse_at_top,#643676_0%,#241b30_45%,#17131e_80%)] pt-[18%]`}><UserRound size={96} className="text-violet-200/25" aria-hidden="true" /></div>}
+        <div className={`${styles.overlay} pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(12,8,18,0.04)_0%,rgba(18,12,25,0.15)_25%,rgba(22,17,30,0.6)_48%,rgba(23,19,30,0.8)_80%)]`} />
         {isOwner && <><input ref={imageInput} tabIndex={-1} type="file" aria-label="Update card portrait" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={event => void upload(event)} className="sr-only" /><button type="button" disabled={busy} aria-label="Update card image" onClick={() => imageInput.current?.click()} className="group/image absolute inset-x-0 top-0 flex h-[38%] items-end justify-center pb-5 text-xs text-white/80 focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-violet-400 disabled:opacity-50"><span className={`flex items-center gap-2 rounded-full border border-white/20 bg-black/40 px-3 py-2 backdrop-blur-md transition-opacity ${design.avatar && !busy ? 'opacity-0 group-hover/image:opacity-100 group-focus-visible/image:opacity-100' : 'opacity-100'}`}><ImagePlus size={15} aria-hidden="true" />{busy ? 'Saving…' : 'Click to change image'}</span></button></>}
         <div className="flex flex-1 flex-col justify-end px-5 pt-[60%] pb-5 sm:px-6 sm:pb-6">
-          {isOwner && editing === 'name' ? textEditor('name') : <h1 aria-label={design.name} className="break-words text-3xl font-semibold tracking-tight">{isOwner ? <button disabled={busy} onClick={() => edit('name')} aria-label="Edit creator name" className="w-full text-left hover:text-violet-200 focus-visible:outline-2 focus-visible:outline-violet-400">{design.name}<Pencil size={13} className="ml-2 inline opacity-50" aria-hidden="true" /></button> : design.name}</h1>}
+          {isOwner && editing === 'name' ? textEditor('name') : <h1 className="break-words text-3xl font-semibold tracking-tight">{isOwner ? <button disabled={busy} onClick={() => edit('name')} aria-label="Edit creator name" className="w-full text-left hover:text-violet-200 focus-visible:outline-2 focus-visible:outline-violet-400">{design.name}<Pencil size={13} className="ml-2 inline opacity-50" aria-hidden="true" /></button> : design.name}</h1>}
+          <p className="mt-2 break-words text-sm" style={{ color: "var(--card-accent-ink)" }}>@{creator.alias}</p>
           <div className="mt-3">{isOwner && editing === 'bio' ? textEditor('bio') : <p className="whitespace-pre-line break-words text-sm leading-6 text-white/75">{isOwner ? <button disabled={busy} onClick={() => edit('bio')} aria-label="Edit creator bio" className="w-full whitespace-pre-line text-left hover:text-white focus-visible:outline-2 focus-visible:outline-violet-400">{design.bio || 'Click to add your story.'}<Pencil size={12} className="ml-2 inline opacity-50" aria-hidden="true" /></button> : design.bio}</p>}</div>
-          <div className="mt-5 space-y-2.5">{design.links.filter(link => safeLink(link.url)).map(link => <a key={link.id} href={safeLink(link.url)!} target="_blank" rel="noopener noreferrer" className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-white/15 bg-white/[.07] px-4 py-3 text-sm backdrop-blur-md transition hover:bg-violet-400/15"><Link2 size={21} className="shrink-0 text-violet-400" aria-hidden="true" /><span className="min-w-0 flex-1 break-words">{link.title}</span><ArrowUpRight size={16} className="shrink-0 text-white/40" aria-hidden="true" /></a>)}
+          <nav aria-label="Creator social links" className="mt-5 flex flex-wrap items-center justify-center gap-1 sm:gap-3">{siteLink && <a href={safeLink(siteLink.url)!} target="_blank" rel="noopener noreferrer" aria-label={siteLink.title || "Website"} title={siteLink.title || "Website"} className="flex size-11 items-center justify-center rounded-xl bg-white/5 text-white/80 transition hover:bg-white/10"><Globe size={23} aria-hidden="true" /></a>}{Object.entries(design.socials).filter(([, url]) => safeLink(url)).map(([network, url]) => <a key={network} href={safeLink(url)!} target="_blank" rel="noopener noreferrer" aria-label={network === 'x' ? 'X' : network === 'youtube' ? 'YouTube' : 'Instagram'} className="flex size-11 items-center justify-center rounded-xl bg-white/5 text-white/80 transition hover:bg-white/10">{network === 'instagram' ? <Instagram size={23} aria-hidden="true" /> : network === 'youtube' ? <Youtube size={23} aria-hidden="true" /> : <span className="text-xl" aria-hidden="true">𝕏</span>}</a>)}<button disabled={preview} onClick={() => void share()} aria-label="Share creator page" className="flex size-11 items-center justify-center rounded-xl bg-white/5 text-white/80 hover:bg-white/10"><Share2 size={21} aria-hidden="true" /></button></nav>
+        </div>
+      </section>
+      </div>
+      <section aria-label="Offers and links" data-testid="creator-details" data-light={light} data-button-glow={design.buttonGlow ?? false} data-rounded={design.rounded} style={appearanceStyle} className={`${styles.details} mt-6 min-w-0 rounded-2xl border border-current/10 p-4 sm:p-5 ${light ? 'bg-white text-zinc-900' : 'bg-[#101015] text-white'}`}>
+          {!!otherLinks.length && <nav aria-label="Creator website links" className="mb-4 flex min-w-0 flex-wrap gap-2">{otherLinks.map(link => <a key={link.id} href={safeLink(link.url)!} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-xl border border-white/15 bg-white/[.07] px-3 py-2 text-sm transition hover:bg-violet-400/15"><span className="min-w-0 break-words">{link.title}</span><ArrowUpRight size={14} className="shrink-0" aria-hidden="true" /></a>)}</nav>}
+          <div className="space-y-2.5">
+            {(design.offers ?? []).filter(offer => offer.type !== 'tickets').map(offer => <Dialog key={offer.id}>
+              <DialogPrimitive.Trigger asChild><button type="button" disabled={preview} className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-violet-400/25 bg-violet-400/10 px-4 py-3 text-sm backdrop-blur-md transition hover:bg-violet-400/20 text-left"><OfferRowContents offer={offer} /></button></DialogPrimitive.Trigger>
+              <DialogContent aria-describedby={undefined} className="max-h-[85dvh] w-[calc(100%-2rem)] overflow-y-auto border-violet-400/30 bg-[#17131e] text-white"><DialogTitle className="sr-only">{offer.billingPeriod === 'month' ? 'Monthly offer' : 'Offer'}: {offer.title}</DialogTitle>{offer.billingPeriod === 'month' ? <MonthlyPlans key={`${creator.alias}:${offer.id}`} alias={creator.alias} offer={offer} creatorWallet={creator.wallet} /> : <OfferCheckout key={`${creator.alias}:${offer.id}`} alias={creator.alias} offer={offer} creatorWallet={creator.wallet} />}{safeLink(offer.url) && <a href={safeLink(offer.url)!} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 text-sm text-violet-300 underline">More details<ArrowUpRight size={14} aria-hidden="true" /></a>}</DialogContent>
+            </Dialog>)}
             <Dialog>
               <DialogPrimitive.Trigger asChild>
                 <button type="button" disabled={preview} className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-violet-400/35 bg-violet-400/15 px-4 py-3 text-left text-sm transition hover:bg-violet-400/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"><Heart size={23} className="shrink-0 text-violet-300" aria-hidden="true" /><span className="flex-1">Tips</span><span className="text-xs text-white/60">{creator.tipsEnabled ? 'USDC' : 'Paused'}</span><ArrowUpRight size={15} className="text-white/40" aria-hidden="true" /></button>
@@ -121,15 +162,12 @@ export function PublicCreatorCard({ creator, preview = false, embedded = false }
               </DialogContent>
             </Dialog>
           </div>
-          <nav aria-label="Creator social links" className="mt-5 flex flex-wrap items-center justify-center gap-3">{Object.entries(design.socials).filter(([, url]) => safeLink(url)).map(([network, url]) => <a key={network} href={safeLink(url)!} target="_blank" rel="noopener noreferrer" aria-label={network === 'x' ? 'X' : network === 'youtube' ? 'YouTube' : 'Instagram'} className="flex size-11 items-center justify-center rounded-xl bg-white/5 text-white/80 transition hover:bg-white/10">{network === 'instagram' ? <Instagram size={23} aria-hidden="true" /> : network === 'youtube' ? <Youtube size={23} aria-hidden="true" /> : <span className="text-xl" aria-hidden="true">𝕏</span>}</a>)}<button disabled={preview} onClick={() => void share()} aria-label="Share creator page" className="flex size-11 items-center justify-center rounded-xl bg-white/5 text-white/80 hover:bg-white/10"><Share2 size={21} aria-hidden="true" /></button></nav>
-        </div>
       </section>
       {!preview && creator.published !== false && <CallBookingPanel key={`${creator.alias}:${session.wallet}`} alias={creator.alias} />}
       {!preview && creator.published !== false && <CreatorCallHistory key={creator.alias} alias={creator.alias} />}
       {notice && <p role={failed ? 'alert' : 'status'} className={`mt-4 rounded-xl border p-3 text-sm ${failed ? 'border-red-400/30 text-red-400' : 'border-emerald-400/30 text-emerald-500'}`}>{notice}</p>}
-      <footer className={`mt-6 text-center text-[10px] tracking-widest opacity-70 ${embedded ? '' : creator.published === false ? 'pb-40' : 'pb-16'}`}><p>{SITE_MOTTO}</p><p className="mt-2">VYNX · SOLANA DEVNET</p></footer>
     </div>
     {!preview && creator.published === false && <p role="status" className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 right-24 z-40 max-w-[460px] rounded-xl border border-violet-400/25 p-4 text-xs leading-5 shadow-lg backdrop-blur-md sm:left-6 sm:right-26 ${light ? 'bg-white/95 text-zinc-900' : 'bg-[#17131e]/95 text-white'}`}>Your card is unpublished. Only you can view it.</p>}
-    {isOwner && <Link href="/dashboard/card" aria-label="Edit my creator card" title="Edit my creator card" className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex size-14 items-center justify-center rounded-full text-black shadow-lg transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet-400 sm:right-6" style={{ background: accent }}><Pencil size={22} aria-hidden="true" /></Link>}
+    {isOwner && <Link href="/dashboard/card" aria-label="Edit my creator card" title="Edit my creator card" className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex size-14 items-center justify-center rounded-full text-black shadow-lg transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet-400 sm:right-6" style={{ background: accent, color: design.accent === 'black' ? 'white' : '#18181b' }}><Pencil size={22} aria-hidden="true" /></Link>}
   </Container>;
 }

@@ -16,7 +16,7 @@ test('Privy validates signatures, audience, expiry and verified wallet ownership
   const key = await importPKCS8(privateKey.export({ format: 'pem', type: 'pkcs8' }), 'ES256');
   const jwk = { ...await exportJWK(publicKey), kid: 'test-key', alg: 'ES256', use: 'sig' };
   let linked = [{ type: 'wallet', chain_type: 'solana', address: wallet, verified_at: 1 }];
-  let userFailure = false, writes = [], revoked = 0;
+  let userFailure = false, writes = [], revoked = 0, synced = [];
   const mint = (audience = appId, expires = Math.floor(Date.now() / 1000) + 600, issuer = 'privy.io') => new SignJWT({ sid: 'test-session' }).setProtectedHeader({ alg: 'ES256', typ: 'JWT', kid: 'test-key' }).setSubject(userId).setIssuer(issuer).setAudience(audience).setIssuedAt().setExpirationTime(expires).sign(key);
   globalThis.fetch = async (input, init) => {
     const req = new Request(input, init), url = new URL(req.url), name = url.pathname.split('/').at(-1);
@@ -29,6 +29,7 @@ test('Privy validates signatures, audience, expiry and verified wallet ownership
     }
     assert.equal(url.hostname, 'auth.supabase.co', `Unexpected request ${url.origin}${url.pathname}`);
     if (name === 'consume_public_endpoint_limit') return Response.json({ allowed: true, retry_after: 60 });
+    if (name === 'sync_privy_notification_email') { synced.push(await req.json()); return Response.json(null); }
     if (name === 'wallet_sessions') {
       if (req.method === 'POST') { writes.push(await req.json()); return new Response(null, { status: 201 }); }
       if (req.method === 'DELETE') { revoked++; return new Response(null, { status: 204 }); }
@@ -39,6 +40,15 @@ test('Privy validates signatures, audience, expiry and verified wallet ownership
   try {
     const valid = await mint();
     assert.equal((await verifyPrivyWallet(valid, wallet)).wallet, wallet);
+    assert.equal((await verifyPrivyWallet(valid, wallet)).email, null);
+    linked.push({ type: 'email', address: 'account@example.com', verified_at: 1 });
+    assert.equal((await verifyPrivyWallet(valid, wallet)).email, 'account@example.com');
+    linked[1].verified_at = null;
+    assert.equal((await verifyPrivyWallet(valid, wallet)).email, null);
+    linked.push({ type: 'google_oauth', email: 'google@example.com', verified_at: 1 });
+    assert.equal((await verifyPrivyWallet(valid, wallet)).email, 'google@example.com');
+    linked[1].verified_at = 1;
+    assert.equal((await verifyPrivyWallet(valid, wallet)).email, 'account@example.com'); linked.pop();
     await assert.rejects(verifyPrivyWallet('forged', wallet), e => e.status === 401);
     await assert.rejects(verifyPrivyWallet(await mint('other-app'), wallet), e => e.status === 401);
     await assert.rejects(verifyPrivyWallet(await mint(appId, 1), wallet), e => e.status === 401);
@@ -51,9 +61,10 @@ test('Privy validates signatures, audience, expiry and verified wallet ownership
     assert.equal((await POST(request({ provider: 'privy', accessToken: valid, wallet }, 'https://evil.test'))).status, 403);
     assert.equal((await POST(request({ provider: 'privy', accessToken: 'forged', wallet }))).status, 401);
     assert.equal(writes.length, 0);
-    const response = await POST(request({ provider: 'privy', accessToken: valid, wallet }, origin, `vynx-session=${'a'.repeat(64)}`));
+    const response = await POST(request({ provider: 'privy', accessToken: valid, wallet, email: 'forged@example.com' }, origin, `vynx-session=${'a'.repeat(64)}`));
     assert.equal(response.status, 200); assert.deepEqual(await response.json(), { wallet });
     assert.equal(writes.length, 1); assert.equal(revoked, 1);
+    assert.deepEqual(synced, [{ owner_wallet: wallet, user_id: userId, verified_email: 'account@example.com' }]);
     assert.equal(writes[0].wallet, wallet); assert.match(writes[0].token_hash, /^[a-f0-9]{64}$/);
     assert.ok(Date.parse(writes[0].expires_at) <= Date.now() + 600_000);
     const cookie = response.headers.get('set-cookie');

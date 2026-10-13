@@ -1,0 +1,80 @@
+import { test, expect } from './test';
+import { createClient } from '@supabase/supabase-js';
+import AxeBuilder from '@axe-core/playwright';
+import { installWallet, signIn } from './wallet';
+import { EMPTY_DRAFT } from '../lib/creator-draft';
+
+const db = () => createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
+test('email setup stays usable after a loading failure and retries preserve the entered address', async ({ context, page }) => {
+  const account = await installWallet(context), wallet = account.publicKey.toBase58(), alias = `email_retry_${Date.now()}`;
+  expect((await db().from('cards_users').insert({wallet_address:wallet,username:alias,display_name:'Email setup owner'})).error).toBeNull();
+  let failReads = true;
+  await page.route('**/api/notification-email', async route => {
+    if (route.request().method()==='GET' && failReads) await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Temporary email storage failure.'})});
+    else await route.continue();
+  });
+  await signIn(page,'/dashboard/card');
+  const email = page.getByLabel('Notification email',{exact:true});
+  const section = page.getByRole('region',{name:'Email notifications',exact:true});
+  await expect(section.getByRole('button',{name:'Retry loading email',exact:true})).toBeVisible();
+  await expect(email).toBeEditable();
+  await email.fill('Setup+news@Example.COM');
+  await section.getByRole('button',{name:'Retry loading email',exact:true}).click();
+  await expect(section.getByRole('button',{name:'Retry loading email',exact:true})).toBeVisible();
+  await expect(email).toHaveValue('Setup+news@Example.COM');
+  await section.getByRole('button',{name:'Save notification email',exact:true}).click();
+  await expect(section.getByRole('status').filter({hasText:'Notification email saved.'})).toBeVisible();
+  expect((await db().from('account_notification_settings').select('notification_email').eq('wallet',wallet).single()).data!.notification_email).toBe('Setup+news@example.com');
+  failReads = false;
+  await page.reload(); await expect(email).toHaveValue('Setup+news@example.com');
+  expect((await db().rpc('sync_privy_notification_email',{owner_wallet:wallet,user_id:'did:privy:email-retry',verified_email:'verified@example.com'})).error).toBeNull();
+  failReads = true;
+  await page.reload();
+  await expect(section.getByRole('button',{name:'Retry loading email',exact:true})).toBeVisible();
+  await email.fill('overwrite@example.com');
+  await section.getByRole('button',{name:'Save notification email',exact:true}).click();
+  await expect.poll(async()=> (await db().from('account_notification_settings').select('notification_email').eq('wallet',wallet).single()).data!.notification_email).toBe('Setup+news@example.com');
+  await expect(section.getByRole('alert')).toBeVisible();
+  failReads = false;
+  await section.getByRole('button',{name:'Retry loading email',exact:true}).click();
+  await expect(email).toHaveValue('verified@example.com'); await expect(email).not.toBeEditable();
+});
+test('notification email persists privately, defers to Privy, and can be removed when no Privy email exists', async ({ context, page }, testInfo) => {
+  const account = await installWallet(context), wallet = account.publicKey.toBase58();
+  const alias = `email_${Date.now()}`;
+  expect((await db().from('cards_users').insert({ wallet_address:wallet, username:alias, display_name:'Email owner', published:true, design:{...EMPTY_DRAFT, alias, name:'Email owner'} })).error).toBeNull();
+  await signIn(page,'/dashboard/card');
+  const email = page.getByLabel('Notification email', {exact:true});
+  const save = page.getByRole('button', {name:'Save notification email',exact:true});
+  await expect(email).toBeEnabled();
+  await email.fill('Creator+news@Example.COM');
+  await save.click();
+  await expect(page.getByRole('status').filter({hasText:'Notification email saved.'})).toBeVisible();
+  await expect(email).toHaveValue('Creator+news@example.com');
+  const saved = await db().from('account_notification_settings').select('notification_email,privy_email').eq('wallet',wallet).single();
+  expect(saved.data).toEqual({notification_email:'Creator+news@example.com',privy_email:null});
+  await page.reload(); await expect(email).toHaveValue('Creator+news@example.com');
+  const publicProfile = await (await page.request.get(`/api/profile?wallet=${wallet}`)).json();
+  expect(publicProfile.profile.notification_email).toBeUndefined();
+  expect(await (await page.request.get(`/${alias}`)).text()).not.toContain('Creator+news@example.com');
+  expect((await db().from('cards_users').select('design').eq('username',alias).single()).data!.design).not.toHaveProperty('notification_email');
+  // A newly linked Privy email wins even if the editor still has a manual form open.
+  await email.fill('overwrite@example.com');
+  expect((await db().from('account_notification_settings').update({privy_email:'privy@example.com',privy_user_id:'did:privy:email-test'}).eq('wallet',wallet)).error).toBeNull();
+  await save.click();
+  await expect(email).toHaveValue('privy@example.com');
+  await expect(email).toHaveAttribute('readonly','');
+  await expect(save).toHaveCount(0);
+  expect((await db().from('account_notification_settings').select('notification_email').eq('wallet',wallet).single()).data!.notification_email).toBe('Creator+news@example.com');
+  expect((await new AxeBuilder({page}).include('section[aria-label="Email notifications"]').withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
+  for (const width of [320,390,430]) {
+    await page.setViewportSize({width,height:844});
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  }
+  await page.getByRole('region',{name:'Email notifications',exact:true}).screenshot({path:testInfo.outputPath('notification-email.png')});
+  expect((await db().from('account_notification_settings').update({privy_email:null}).eq('wallet',wallet)).error).toBeNull();
+  await page.reload(); await expect(email).toHaveValue('Creator+news@example.com');
+  await email.fill(''); await save.click();
+  await expect(page.getByRole('status').filter({hasText:'Notification email removed.'})).toBeVisible();
+  await page.reload(); await expect(email).toHaveValue('');
+});

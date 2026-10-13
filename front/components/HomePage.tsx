@@ -10,14 +10,10 @@ import { motion, useReducedMotion } from "framer-motion";
 
 import { useWalletSession } from "@/components/WalletSessionProvider";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-
-const creators = [
-  { username: "LunaSol", title: "Model • Content Creator", followers: "43.2K", views: "1.2M+", earned: "$57,340", img: "/asset-lunasol.png" },
-  { username: "CryptoCoach", title: "Coach • Educator", followers: "21k", views: "800K+", earned: "$8,920", img: "/asset-cryptocoach.png" },
-  { username: "ArtByMaria", title: "Digital Artist", followers: "15k", views: "500K+", earned: "$5,210", img: "/asset-artbymaria.png" },
-  { username: "FitnessRox", title: "Trainer", followers: "12k", views: "300K+", earned: "$6,340", img: "/asset-fitnessrox.png" },
-];
+import { PublicCreatorCard } from "@/components/PublicCreatorCard";
+import demoProfiles from "@/data/demo-profiles.json";
+import { EMPTY_DRAFT, type CreatorDraft } from "@/lib/creator-draft";
+import type { PublicCreator } from "@/lib/public-creator";
 
 const steps = [
   { number: "01", title: "Create your account", desc: "Sign in with email or your Solana wallet", icon: "/personalcard.svg" },
@@ -41,7 +37,7 @@ const sectionReveal = {
   viewport: { once: true, amount: 0.2 },
 };
 
-export default function HomePage({ children }: { children?: ReactNode }) {
+export default function HomePage({ children, featuredCreator }: { children?: ReactNode; featuredCreator?: PublicCreator | null }) {
   const router = useRouter();
   const session = useWalletSession();
   const reduceMotion = useReducedMotion();
@@ -176,8 +172,28 @@ export default function HomePage({ children }: { children?: ReactNode }) {
       </div></section>
 
       <section id="creators" className="border-y border-white/8 bg-white/[0.018] px-5 py-24 sm:px-8 lg:px-12 lg:py-32"><div className="mx-auto max-w-[1480px]">
-        <motion.div {...reveal} transition={{ duration: 0.6 }} className="mb-14 text-center"><p className="mb-3 text-sm font-black uppercase tracking-[0.25em] text-[#a3a3a3]">Made for every creator</p><h2 className="heading-font text-4xl leading-[0.95] sm:text-6xl lg:text-7xl">CARDS THAT EARN.</h2></motion.div>
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">{creators.map((creator, index) => <motion.div key={creator.username} initial={reduceMotion ? false : { opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.15 }} transition={{ duration: 0.5, delay: index * 0.08 }} whileHover={reduceMotion ? undefined : { y: -10 }}><Card className="group overflow-hidden rounded-3xl border-white/10 bg-[#111111] p-0 shadow-2xl transition-colors hover:border-[#f5f5f5]/35"><CardContent className="p-0"><div className="relative aspect-[4/5] overflow-hidden"><Image src={creator.img} alt={creator.username} fill sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw" className="object-cover transition duration-700 motion-safe:group-motion-safe:hover:scale-105" /><div className="absolute inset-0 bg-linear-to-t from-[#111111] via-transparent to-transparent" /><span className="absolute right-4 top-4 rounded-full border border-[#f5f5f5]/45 bg-black/70 px-3 py-1 text-xs font-bold text-[#f5f5f5] shadow-[0_0_18px_rgba(255,255,255,0.04)] backdrop-blur-md">{creator.views} views</span></div><div className="relative -mt-8 p-6 pt-0"><h3 className="heading-font text-2xl text-white">@{creator.username}</h3><p className="mt-1 text-sm text-white/60">{creator.title}</p><div className="mt-5 flex items-end justify-between border-t border-white/10 pt-4"><span className="text-sm text-white/60">{creator.followers} followers</span><span className="text-lg font-black text-[#f5f5f5]">{creator.earned}</span></div></div></CardContent></Card></motion.div>)}</div>
+        <motion.div {...reveal} transition={{ duration: 0.6 }} className="mb-14 text-center">
+          <p className="mb-3 text-sm font-black uppercase tracking-[0.25em] text-[#a3a3a3]">Made for every creator</p>
+          <h2 className="heading-font text-4xl leading-[0.95] sm:text-6xl lg:text-7xl">MEET YOUR NEXT CARD.</h2>
+          <p className="mx-auto mt-5 max-w-2xl text-lg text-white/60">Your space for ideas, stories, and everything you create.</p>
+        </motion.div>
+        <div className="grid items-start gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          {featuredCreator && <article aria-label="@fabohax creator card">
+            <p className="mb-3 px-3 text-sm text-white/70">Creator · Developer</p>
+            <PublicCreatorCard preview embedded creator={featuredCreator} />
+          </article>}
+          {demoProfiles.slice(0, featuredCreator ? 3 : 4).map((profile, index) => <motion.article key={profile.id} aria-label={`${profile.name} creator card`} initial={reduceMotion ? false : { opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.15 }} transition={{ duration: 0.5, delay: index * 0.08 }}>
+            <div className="mb-3 flex items-center justify-between gap-3 px-3">
+              <p className="text-sm text-white/70">{profile.role}</p>
+            </div>
+            <PublicCreatorCard preview embedded creator={{
+              id: profile.id, alias: profile.alias.replace(/^demo_/, ''), wallet: profile.wallet, tipsEnabled: false, published: false,
+              design: { ...EMPTY_DRAFT, alias: profile.alias.replace(/^demo_/, ''), name: profile.name, bio: profile.bio.replace(/ Fictional demo profile\.$/, ''),
+                avatar: `/demo/creators/${profile.image}`, accent: profile.accent as CreatorDraft['accent'], socials: profile.socials },
+            }} />
+          </motion.article>)}
+        </div>
+        <div className="mt-8 text-center"><Link href="/fabohax" className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-5 text-sm font-semibold transition hover:bg-white/5">Explore @fabohax →</Link></div>
       </div></section>
 
       <section id="features" className="px-5 py-24 sm:px-8 lg:px-12 lg:py-32"><div className="mx-auto max-w-[1480px]">

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import HomePage from '@/components/HomePage';
 import { publishedCreators } from '@/lib/published-creators';
+import { publicCreator } from '@/lib/public-creator';
 import { jsonLd, siteUrl, SITE_DESCRIPTION, SITE_TITLE } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
@@ -10,12 +11,15 @@ export const metadata: Metadata = { alternates: { canonical: siteUrl() },
 
 export default async function Home() {
   // Keep the landing page available if profile storage temporarily fails.
-  const creators = await publishedCreators(0, 12).catch(() => []);
+  const [creators, featuredCreator] = await Promise.all([
+    publishedCreators(0, 12).catch(() => []),
+    publicCreator('fabohax').catch(() => null),
+  ]);
   const structuredData = { '@context': 'https://schema.org', '@graph': [
     { '@type': 'Organization', '@id': siteUrl('/#organization'), name: 'VYNX', url: siteUrl(), logo: siteUrl('/logo.png') },
     { '@type': 'WebSite', '@id': siteUrl('/#website'), name: 'VYNX', url: siteUrl(), description: SITE_DESCRIPTION, publisher: { '@id': siteUrl('/#organization') } },
   ] };
-  return <HomePage>
+  return <HomePage featuredCreator={featuredCreator}>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }} />
     {creators.length > 0 && <section aria-labelledby="published-creators" className="px-5 py-12 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-[1480px]">

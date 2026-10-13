@@ -13,12 +13,12 @@ export async function GET(request: Request) {
       const wallet = await requireWallet(request), id = new URL(request.url).searchParams.get('id');
       if (!validId(id)) throw new ApiError('Invalid booking.');
       const db = appDb();
-      const { data: booking, error } = await db.from('call_bookings').select('payer_wallet,state,payment_signature,ends_at').eq('id', id).maybeSingle();
+      const { data: booking, error } = await db.from('call_bookings').select('payer_wallet,state,payment_signature,monthly_invoice_id,ends_at').eq('id', id).maybeSingle();
       if (error) throw new ApiError('Reviews are unavailable.', 503);
       if (!booking || booking.payer_wallet !== wallet) throw new ApiError('Booking not found.', 404);
       const { data: review, error: reviewError } = await db.from('call_reviews').select('overall_rating,punctuality,communication,fulfillment,comment,created_at').eq('booking_id', id).maybeSingle();
       if (reviewError) throw new ApiError('Reviews are unavailable.', 503);
-      return reply({ review, eligible: !review && booking.state === 'completed' && !!booking.payment_signature && Date.parse(booking.ends_at) <= Date.now() });
+      return reply({ review, eligible: !review && booking.state === 'completed' && (!!booking.payment_signature || !!booking.monthly_invoice_id) && Date.parse(booking.ends_at) <= Date.now() });
     } catch (reason) { return apiFailure(reason); }
   });
 }

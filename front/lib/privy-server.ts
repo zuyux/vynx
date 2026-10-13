@@ -1,4 +1,5 @@
 import { PrivyClient } from '@privy-io/node';
+import { notificationEmail } from './notification-email';
 import { ApiError } from './wallet-session';
 import { walletKey } from './sponsorship-server';
 
@@ -21,5 +22,8 @@ export async function verifyPrivyWallet(accessToken: unknown, wallet: unknown) {
     && account.chain_type === 'solana' && account.address === wallet && account.verified_at != null)) {
     throw new ApiError('This Solana wallet does not belong to your authenticated account.', 403);
   }
-  return { wallet, seconds };
+  const linkedEmail = user.linked_accounts.find(account => account.type === 'email' && account.verified_at != null);
+  const linkedGoogle = user.linked_accounts.find(account => account.type === 'google_oauth' && account.verified_at != null);
+  const email = notificationEmail(linkedEmail?.type === 'email' ? linkedEmail.address : linkedGoogle?.type === 'google_oauth' ? linkedGoogle.email : null);
+  return { wallet, seconds, privyUserId: user.id, email };
 }

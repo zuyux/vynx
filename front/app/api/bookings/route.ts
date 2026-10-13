@@ -110,6 +110,11 @@ export async function POST(request: Request) {
       return reply({ booking: publicBooking(data) });
     }
     if (body.action === 'transition') {
+      if (uuid(body.id)) {
+        const { data: monthly, error: monthlyError } = await db.from('call_bookings').select('monthly_invoice_id').eq('id', body.id).maybeSingle();
+        if (monthlyError) throw new ApiError('Could not load the booking.', 503);
+        if (monthly?.monthly_invoice_id) throw new ApiError('Manage this session through your monthly plan.', 409);
+      }
       if (!uuid(body.id) || !['completed', 'cancelled', 'no_show', 'disputed'].includes(body.state)) throw new ApiError('Invalid operation.');
       const { data, error } = await db.rpc('transition_call_booking', { booking_id: body.id, actor: wallet, target: body.state });
       if (error) throw new ApiError(error.code === 'P0002' ? 'Booking not found.' : 'Booking state change unavailable.', error.code === 'P0002' ? 404 : error.code === 'P0001' ? 409 : 503);
@@ -119,7 +124,8 @@ export async function POST(request: Request) {
     const { data: row, error } = await db.from('call_bookings').select('*').eq('id', body.id).eq('payer_wallet', wallet).maybeSingle();
     if (error) throw new ApiError("Could not load the booking.", 503);
     if (!row) throw new ApiError('Booking not found.', 404);
-    const b = row as CallBooking;
+    const b = row as CallBooking & { monthly_invoice_id?: string };
+    if (b.monthly_invoice_id) throw new ApiError('Use the monthly invoice to manage this payment.', 409);
     if (body.action === 'confirm') {
       if (typeof body.signature !== 'string') throw new ApiError('Signature required.');
       return reply({ booking: publicBooking(await confirm(b, body.signature)) });

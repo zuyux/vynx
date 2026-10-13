@@ -34,6 +34,8 @@ export async function POST(request: Request) {
       let maxAge: number | undefined;
       if (body.provider === 'privy') {
         const verified = await verifyPrivyWallet(body.accessToken, body.wallet);
+        const { error: emailError } = await appDb().rpc('sync_privy_notification_email', { owner_wallet: verified.wallet, user_id: verified.privyUserId, verified_email: verified.email });
+        if (emailError) throw new ApiError('Could not save your account notification settings. Retry sign-in.', 503);
         maxAge = verified.seconds;
         token = await createWalletSession(verified.wallet, maxAge);
       } else {

@@ -5,17 +5,17 @@ import { logServerRequest } from '@/lib/server-log';
 import { attendance, verifiedCompletion, assertPrivateRoom, boundedJSON, callWindow, dailyRequest, roomProperties, tokenProperties, type VideoRoom } from '@/lib/daily-video';
 
 const reply = (body: unknown) => Response.json(body, { headers: { 'Cache-Control': 'no-store' } });
-const columns = 'id,creator_wallet,payer_wallet,starts_at,ends_at,state,payment_signature,terms';
+const columns = 'id,creator_wallet,payer_wallet,starts_at,ends_at,state,payment_signature,monthly_invoice_id,terms';
 async function participant(id: unknown, wallet: string) {
   if (typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) throw new ApiError("Invalid booking.");
   const { data, error } = await appDb().from('call_bookings').select(columns).eq('id', id).maybeSingle();
   if (error) throw new ApiError("Could not load the booking.", 503);
   if (!data || ![data.creator_wallet, data.payer_wallet].includes(wallet)) throw new ApiError('Booking not found.', 404);
-  if (!data.payment_signature) throw new ApiError("Confirm the booking payment first.", 409);
+  if (!data.payment_signature && (!data.monthly_invoice_id || !['confirmed', 'completed', 'cancelled', 'no_show', 'disputed'].includes(data.state))) throw new ApiError("Confirm the booking payment first.", 409);
   return data;
 }
-function summary(b: { id: string; starts_at: string; ends_at: string; creator_wallet: string; terms: Record<string, unknown>; state: string }, wallet: string) {
-  return { id: b.id, state: b.state, starts_at: b.starts_at, ends_at: b.ends_at, title: b.terms.title, role: wallet === b.creator_wallet ? 'creator' : 'fan', call_path: `/calls/${b.id}` };
+function summary(b: { id: string; starts_at: string; ends_at: string; creator_wallet: string; terms: Record<string, unknown>; state: string; monthly_invoice_id?: string | null }, wallet: string) {
+  return { id: b.id, billing_period: b.monthly_invoice_id ? 'month' : 'session', state: b.state, starts_at: b.starts_at, ends_at: b.ends_at, title: b.terms.title, role: wallet === b.creator_wallet ? 'creator' : 'fan', call_path: `/calls/${b.id}` };
 }
 export async function GET(request: Request) {
   return logServerRequest(request, '/api/calls', async () => {

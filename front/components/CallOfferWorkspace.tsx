@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { SESSION_DURATIONS, sessionDurationLabel } from '@/lib/offer-terms';
 import BookedCalls from './BookedCalls';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Sidebar } from '@/components/Sidebar';
@@ -37,7 +38,7 @@ function OfferEditor({ offer, owner, onSaved }: { offer: CallOffer | null; owner
     <fieldset disabled={busy} className="min-w-0 space-y-6 disabled:opacity-60"><legend className="sr-only">Set up a video call service</legend>
       <label className="block text-sm text-zinc-300">Service name<input name="title" required minLength={3} maxLength={100} value={draft.title} onChange={event => change('title', event.target.value)} placeholder="Design mentoring" className={input} /></label>
       <label className="block text-sm text-zinc-300">What the service includes<textarea name="description" required minLength={10} maxLength={2000} rows={4} value={draft.description} onChange={event => change('description', event.target.value)} placeholder="Explain what you will work on together and what the participant will receive afterward." className={`${input} resize-y`} /></label>
-      <div className="grid gap-5 sm:grid-cols-2"><label className="block text-sm text-zinc-300">Duration (minutes)<input name="duration_minutes" type="number" required min={15} max={240} step={15} value={draft.duration_minutes} onChange={event => change('duration_minutes', Number(event.target.value))} className={input} /></label>
+      <div className="grid gap-5 sm:grid-cols-2"><label className="block text-sm text-zinc-300">Session duration<select name="duration_minutes" required value={draft.duration_minutes} onChange={event => change('duration_minutes', Number(event.target.value))} className={input}>{!(SESSION_DURATIONS as readonly number[]).includes(draft.duration_minutes) && <option value={draft.duration_minutes}>{draft.duration_minutes} min (current)</option>}{SESSION_DURATIONS.map(duration => <option key={duration} value={duration}>{sessionDurationLabel(duration)}</option>)}</select></label>
       <label className="block text-sm text-zinc-300">Price (test USDC)<input name="price" type="number" required min="0.01" max="1000" step="0.000001" value={draft.price} onChange={event => change('price', event.target.value)} className={input} /><span className="mt-2 block text-xs leading-5 text-zinc-400">From 0.01 to 1000 USDC per session. Solana devnet; tokens have no monetary value.</span></label></div>
       <label className="block text-sm text-zinc-300">Booking time zone<input name="timezone" required list="booking-timezones" value={draft.timezone} onChange={event => change('timezone', event.target.value)} className={input} aria-describedby="timezone-help" /><datalist id="booking-timezones">{zones.map(zone => <option key={zone} value={zone} />)}</datalist><span id="timezone-help" className="mt-2 block text-xs leading-6 text-zinc-400">Use an IANA time zone such as America/Lima or Europe/Madrid. All times below are local to this zone; zones with daylight saving time keep the local time.</span></label>
       <fieldset className="min-w-0 rounded-2xl border border-white/15 p-4"><legend className="px-2 text-sm font-semibold">Weekly availability</legend><p className="mb-4 text-xs leading-6 text-zinc-400">Add availability windows in 15-minute intervals. Each window must fit within one day and allow a full session. Windows cannot overlap.</p>
@@ -72,7 +73,7 @@ export default function CallOfferWorkspace() {
   }, [wallet, retry]);
   const loaded = snapshot?.wallet === wallet ? snapshot : null;
   return <div className="min-h-screen bg-[#08080b] text-white"><Sidebar /><main id="main-content" tabIndex={-1} className="mx-auto max-w-5xl px-5 py-8 sm:px-8 lg:ml-64 lg:px-12">
-    <Link href="/dashboard/card" className="text-sm text-violet-300 underline">Back to My page</Link>
+    <Link href="/dashboard/card" className="text-sm text-violet-300 underline">Back to My Card</Link>
     <h1 className="mt-5 text-3xl font-semibold">My video call service</h1><p className="mt-3 text-sm leading-7 text-zinc-300">Set your service, duration, price, and availability. You can save one service per wallet and update it whenever you want.</p>
     <p className="mt-5 rounded-xl border border-violet-400/30 bg-violet-400/10 p-4 text-sm leading-7 text-violet-200">Confirmed bookings include a private link for the creator and fan. Payments use test USDC on Solana devnet.</p>
     <BookedCalls key={wallet} />

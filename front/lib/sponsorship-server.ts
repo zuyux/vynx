@@ -1,10 +1,10 @@
 import { UserFacingError } from './user-facing-error';
 import { appDb } from './app-db';
 import { createHash, createPublicKey, randomUUID, verify } from 'node:crypto';
-import { Connection, PublicKey, SystemProgram, Transaction, TransactionInstruction, type ParsedTransactionWithMeta } from '@solana/web3.js';
+import { PublicKey, SystemProgram, Transaction, TransactionInstruction, type ParsedTransactionWithMeta } from '@solana/web3.js';
 import type { SponsorAction, SponsorPayload, SponsorRequest } from './sponsorship-domain';
 
-export const DEVNET_RPC = 'https://api.devnet.solana.com';
+import { aliasConnection } from './alias-network';
 export const USDC_MINT = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
 const TOKEN = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 const ASSOCIATED = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
@@ -80,7 +80,7 @@ export function tokenAccount(wallet: string) {
 }
 
 export async function checkout(campaign: SponsorRequest) {
-  const connection = new Connection(DEVNET_RPC, 'confirmed');
+  const connection = await aliasConnection();
   const payer = new PublicKey(campaign.brand_wallet);
   const receiver = new PublicKey(campaign.creator_wallet);
   const source = tokenAccount(campaign.brand_wallet);
@@ -107,7 +107,7 @@ export async function checkout(campaign: SponsorRequest) {
 
 export async function verifyPayment(campaign: SponsorRequest, signature: string) {
   if (!/^[1-9A-HJ-NP-Za-km-z]{64,88}$/.test(signature)) throw new UserFacingError("Invalid transaction signature.");
-  const connection = new Connection(DEVNET_RPC, 'finalized');
+  const connection = await aliasConnection({ commitment: 'finalized' });
   const tx = await connection.getParsedTransaction(signature, { commitment: 'finalized', maxSupportedTransactionVersion: 0 });
   if (!tx || !tx.meta) throw new UserFacingError("The payment is not finalized on devnet yet. Wait and verify again.", 'PAYMENT_PENDING');
   if (tx.meta.err) throw new UserFacingError("Transaction failed.", 'PAYMENT_FAILED');

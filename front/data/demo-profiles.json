@@ -1,0 +1,62 @@
+[
+  {
+    "alias": "demo_lunastudio",
+    "name": "Luna Vega",
+    "role": "Creative director",
+    "bio": "Design, ideas, and thoughtful conversations. I help independent creators shape their next project. Fictional demo profile.",
+    "accent": "violet",
+    "image": "lunastudio.webp",
+    "id": "8cdce1a4-a36e-434b-a3e2-dcbabae6cbc5",
+    "wallet": "D8tFuzqbWPA2rDWnpvtNEwZ6kLgDtAp4f61aH4PBftRP",
+    "socials": {
+      "instagram": "https://www.instagram.com/lunastudio/",
+      "youtube": "https://www.youtube.com/@lunastudio",
+      "x": "https://x.com/lunastudio"
+    }
+  },
+  {
+    "alias": "demo_mateobeats",
+    "name": "Mateo Cruz",
+    "role": "Music producer",
+    "bio": "Beats with warmth and a little late-night energy. Exploring sound, sampling, and the creative process. Fictional demo profile.",
+    "accent": "rose",
+    "image": "mateobeats.webp",
+    "id": "7c9b7908-a5cd-4e5c-ab21-bd8122f2fe7a",
+    "wallet": "5PcLXyAGVjFDPPJRVQxSp2mn3ZXTkr4qFSegyK4jNyg9",
+    "socials": {
+      "instagram": "https://www.instagram.com/mateobeats/",
+      "youtube": "https://www.youtube.com/@mateobeats",
+      "x": "https://x.com/mateobeats"
+    }
+  },
+  {
+    "alias": "demo_sofiaframes",
+    "name": "Sofia Reyes",
+    "role": "Photographer",
+    "bio": "Portraits, everyday stories, and the beauty of natural light. Sharing how I see the world, one frame at a time. Fictional demo profile.",
+    "accent": "mint",
+    "image": "sofiaframes.webp",
+    "id": "52066989-62cc-44d7-a5d9-2e39ef07a2d1",
+    "wallet": "4EGxEaVnQa8V9Yp7B9Znm3F2ijGPu5gSbq4Q5mX2MgMe",
+    "socials": {
+      "instagram": "https://www.instagram.com/sofiaframes/",
+      "youtube": "https://www.youtube.com/@sofiaframes",
+      "x": "https://x.com/sofiaframes"
+    }
+  },
+  {
+    "alias": "demo_kaiworks",
+    "name": "Kai Tan",
+    "role": "Illustrator",
+    "bio": "Turning small ideas into colorful worlds. Illustration, visual storytelling, and a sketchbook full of experiments. Fictional demo profile.",
+    "accent": "violet",
+    "image": "kaiworks.webp",
+    "id": "a21eb774-292a-4647-a129-e003f81f7452",
+    "wallet": "ANMonT1TE4WD3UE4WHs2w1WuiV4WMAmrEiBpxeSVXHDW",
+    "socials": {
+      "instagram": "https://www.instagram.com/kaiworks/",
+      "youtube": "https://www.youtube.com/@kaiworks",
+      "x": "https://x.com/kaiworks"
+    }
+  }
+]

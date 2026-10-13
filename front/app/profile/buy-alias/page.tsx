@@ -18,6 +18,17 @@ function BuyAliasContent() {
   const params = useSearchParams();
   const router = useRouter();
   const session = useWalletSession();
+  const [copyFeedback, setCopyFeedback] = useState<{ wallet: string; message: string } | null>(null);
+  async function copyWalletAddress() {
+    const wallet = session.connectedWallet;
+    if (!wallet) return;
+    try {
+      await navigator.clipboard.writeText(wallet);
+      setCopyFeedback({ wallet, message: 'Wallet address copied.' });
+    } catch {
+      setCopyFeedback({ wallet, message: 'Unable to copy. Select and copy the address above.' });
+    }
+  }
   const claimed = useClaimedAlias(session.wallet === session.connectedWallet ? session.wallet : '');
   useEffect(() => {
     if (claimed.alias && !claimed.error) router.replace(`/${encodeURIComponent(claimed.alias)}`);
@@ -128,10 +139,30 @@ function BuyAliasContent() {
   }
   return <main id="main-content" tabIndex={-1} className="flex min-h-screen items-center justify-center bg-[#07070a] p-6 text-white"><section className="w-full max-w-md rounded-3xl border border-white/10 bg-[#101015] p-8"><BrandLogo /><h1 className="mt-6 text-3xl font-semibold">Claim your alias</h1>{params.get('welcome') === '1' && <p className="mt-3 text-sm leading-6 text-zinc-300">Welcome to Vynx. Claim your unique @alias to create your creator card and give your audience a place to find you.</p>}<PaymentDisclosure /><p className="mt-3 text-sm leading-6 text-zinc-400">One alias per wallet. {currentQuote ? `Registration costs ${currentQuote.priceSol} SOL on Solana devnet, including account rent. ${currentQuote.sponsored ? 'VYNX pays network fees.' : 'Network fees are extra.'}` : 'Enter a 1–30 character alias to read its on-chain price.'}</p>
     {claimed.alias ? <div className="mt-6"><p>Your wallet already owns @{claimed.alias}.</p><Link href="/dashboard/card" className="mt-5 inline-block rounded-xl bg-[#00F5A0] px-5 py-3 font-semibold text-black">Edit my creator card</Link></div> : <form onSubmit={event => void claim(event)} className="mt-6 space-y-4"><label className="block text-sm">Alias<input name="alias" required minLength={1} maxLength={30} disabled={busy || !!pending} value={alias} onChange={event => setAlias(event.target.value.toLowerCase())} placeholder="your_alias" className="mt-2 w-full rounded-xl border border-white/15 bg-black/20 px-4 py-3 outline-none focus:border-[#00F5A0]" /></label><button type={session.connectedWallet ? 'submit' : 'button'} onClick={session.connectedWallet ? undefined : event => void claim(event)} disabled={busy || claimed.loading || !!claimed.error || (!!session.connectedWallet && !pending && !currentQuote)} className="w-full rounded-xl bg-[#00F5A0] px-5 py-3 font-semibold text-black disabled:opacity-40">{busy ? 'Processing…' : pending ? 'Verify alias payment' : session.connectedWallet ? `Claim alias — ${currentQuote?.priceSol ?? '…'} SOL` : 'Connect wallet'}</button></form>}
+    <section aria-labelledby="wallet-funding-heading" className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-4">
+      <h2 id="wallet-funding-heading" className="text-sm font-semibold">Your wallet · Solana devnet</h2>
+      {session.connectedWallet ? <>
+        <p className="mt-3 text-xs text-zinc-400">Connected wallet address</p>
+        <p className="mt-2 break-all font-mono text-sm text-zinc-200 select-all">{session.connectedWallet}</p>
+        <button type="button" onClick={() => void copyWalletAddress()} className="mt-3 rounded-lg border border-white/15 px-3 py-2 text-xs font-medium text-[#00F5A0]">Copy wallet address</button>
+        {copyFeedback?.wallet === session.connectedWallet && <p role="status" className="mt-2 text-xs text-zinc-300">{copyFeedback.message}</p>}
+      </> : <p className="mt-3 text-sm text-zinc-400">Connect your wallet to see the address to fund.</p>}
+      <h3 className="mt-4 text-sm font-medium">How to fund it</h3>
+      <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm leading-6 text-zinc-300">
+        <li>Copy your connected wallet address.{session.connectedWallet && <><code className="mt-2 block break-all rounded-lg bg-black/30 p-3 text-xs text-zinc-200 select-all">{session.connectedWallet}</code><button type="button" onClick={() => void copyWalletAddress()} className="mt-2 rounded-lg border border-white/15 px-3 py-2 text-xs font-medium text-[#00F5A0]">Copy wallet address</button></>}</li>
+        <li>Open the <a href="https://faucet.solana.com/" target="_blank" rel="noopener noreferrer" className="text-[#00F5A0] underline">Solana faucet (opens in a new tab)</a>, select Devnet, paste your address, and request free test SOL.</li>
+        <li>Wait for the SOL to arrive, then return here to claim your alias.{currentQuote ? ` You need ${currentQuote.priceSol} SOL${currentQuote.sponsored ? '; VYNX pays network fees.' : ' plus network fees.'}` : ''}</li>
+      </ol>
+      <p className="mt-3 text-xs leading-5 text-zinc-400">Devnet SOL has no monetary value. Use devnet in your wallet when available. Do not send real SOL from an exchange or mainnet to fund this purchase.</p>
+    </section>
     {quoteError && <p role="alert" className="mt-4 text-sm text-red-200">{quoteError} <button type="button" onClick={() => setQuoteAttempt(previous => previous + 1)} className="underline">Retry pricing</button></p>}
     {notice && <p role={failed ? 'alert' : 'status'} className={`mt-4 text-sm ${failed ? 'text-red-200' : 'text-emerald-200'}`}>{notice}</p>}
     {claimed.error && <p role="alert" className="mt-4 text-sm text-red-200">{claimed.error} <button onClick={claimed.retry} className="underline">Retry</button></p>}
     {pending && <p className="mt-4 break-all text-xs text-zinc-400">Payment sent: {pending.signature}. Retry verification instead of paying again.</p>}
   </section></main>;
 }
-export default function BuyAliasPage() { return <Suspense fallback={<p role="status">Loading claim…</p>}><BuyAliasContent /></Suspense>; }
+function BuyAliasFromParams() {
+  const params = useSearchParams();
+  return <BuyAliasContent key={params.get('alias') ?? ''} />;
+}
+export default function BuyAliasPage() { return <Suspense fallback={<p role="status">Loading claim…</p>}><BuyAliasFromParams /></Suspense>; }

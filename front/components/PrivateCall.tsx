@@ -7,7 +7,7 @@ import { responseError, userErrorMessage } from '@/lib/user-facing-error';
 import type { VerifiedCompletion } from '@/lib/daily-video';
 import BookingReview from './BookingReview';
 
-type Call = { id: string; title: string; starts_at: string; ends_at: string; role: string; state: string };
+type Call = { id: string; title: string; starts_at: string; ends_at: string; role: string; state: string; billing_period?: 'month' | 'session' };
 type Evidence = { simultaneous_seconds: number; scheduled_seconds: number; evidence_status: string; gaps: string[] };
 export default function PrivateCall({ id }: { id: string }) {
   const session = useWalletSession();
@@ -57,7 +57,7 @@ export default function PrivateCall({ id }: { id: string }) {
     try {
       const wallet = await session.ensureSession();
       if (wallet !== session.wallet) throw new Error('Wallet changed');
-      const response = await fetch('/api/bookings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'transition', id, state }) });
+      const response = await fetch(loaded?.call.billing_period === 'month' ? '/api/monthly-offers' : '/api/bookings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: loaded?.call.billing_period === 'month' ? 'session' : 'transition', id, state }) });
       const result = await response.json();
       if (!response.ok) throw responseError(response, result, 'Could not update booking.');
       setSnapshot(previous => previous?.wallet === wallet ? { ...previous, call: { ...previous.call, state: result.booking.state } } : previous);
@@ -77,19 +77,19 @@ export default function PrivateCall({ id }: { id: string }) {
       <button disabled={busy || (!joined && loaded.call.state !== 'confirmed')} onClick={() => joined ? setAccess(null) : void join()} className="mt-6 rounded-xl bg-violet-400 p-4 font-semibold text-black disabled:opacity-50">{busy ? 'Preparing access…' : joined ? "Leave call" : "Join call"}</button>
       <div className="mt-4 flex flex-wrap gap-3">
         {loaded.call.state === 'confirmed' && <>
-          <button disabled={busy} onClick={() => void transition('cancelled')} className="rounded-lg border p-3">Cancel booking</button>
+          {(loaded.call.billing_period !== 'month' || loaded.call.role === 'creator') && <button disabled={busy} onClick={() => void transition('cancelled')} className="rounded-lg border p-3">Cancel booking</button>}
           {loaded.checkedAt >= Date.parse(loaded.call.ends_at) && <>
             {loaded.call.role === 'fan' && <button disabled={busy} onClick={() => void transition('completed')} className="rounded-lg border p-3">Acknowledge completion</button>}
             <button disabled={busy} onClick={() => void transition('no_show')} className="rounded-lg border p-3">Report no-show</button>
           </>}
         </>}
-        {['confirmed', 'completed', 'no_show'].includes(loaded.call.state) && <button disabled={busy} onClick={() => void transition('disputed')} className="rounded-lg border p-3">Open dispute</button>}
+        {loaded.call.billing_period !== 'month' && ['confirmed', 'completed', 'no_show'].includes(loaded.call.state) && <button disabled={busy} onClick={() => void transition('disputed')} className="rounded-lg border p-3">Open dispute</button>}
       </div>
-      <p className="mt-3 text-sm text-zinc-300">Cancellation requires 24 hours’ notice. Disputes close 24 hours after the call. Status changes do not release or refund escrow.</p>
-      {loaded.attendance && <p className="mt-4 text-sm" role="status">Verified simultaneous attendance: {Math.floor(loaded.attendance.simultaneous_seconds / 60)} of {Math.floor(loaded.attendance.scheduled_seconds / 60)} minutes. {loaded.attendance.evidence_status === 'incomplete' ? "Evidence is still incomplete; waiting for provider events." : 'Signed events received.'} Attendance does not automatically release escrow.</p>}
+      <p className="mt-3 text-sm text-zinc-300">{loaded.call.billing_period === 'month' ? 'This session is included in your paid month. Monthly payments go directly to the creator; arrange any refund with them. You can stop future renewals in Monthly plans.' : 'Cancellation requires 24 hours’ notice. Disputes close 24 hours after the call. Status changes do not release or refund escrow.'}</p>
+      {loaded.attendance && <p className="mt-4 text-sm" role="status">Verified simultaneous attendance: {Math.floor(loaded.attendance.simultaneous_seconds / 60)} of {Math.floor(loaded.attendance.scheduled_seconds / 60)} minutes. {loaded.attendance.evidence_status === 'incomplete' ? "Evidence is still incomplete; waiting for provider events." : 'Signed events received.'}{loaded.call.billing_period !== 'month' && ' Attendance does not automatically release escrow.'}</p>}
       {loaded.completion && <p className="mt-3 text-sm" role="status">
         {loaded.completion.status === 'verified' ? 'Attendance completion verified.' : loaded.completion.status === 'pending' ? 'Completion verification is pending until the session ends.' : loaded.completion.status === 'below_threshold' ? 'Attendance is below the completion threshold.' : 'Completion verification requires review of missing or incomplete evidence.'}
-        {' '}Both participants must attend together for at least {loaded.completion.required_percent}% of the booked duration. This verifies participation and duration; satisfaction and performance ratings are separate. Payer acknowledgment does not change this verification or release escrow.
+        {' '}Both participants must attend together for at least {loaded.completion.required_percent}% of the booked duration. This verifies participation and duration; satisfaction and performance ratings are separate. {loaded.call.billing_period === 'month' ? 'Payer acknowledgment does not change this verification.' : 'Payer acknowledgment does not change this verification or release escrow.'}
       </p>}
       {loaded.call.role === 'fan' && <BookingReview key={`${id}:${session.wallet}:${loaded.call.state}`} id={id} />}
     </>}

@@ -1,0 +1,49 @@
+.cardStage { position: relative; }
+.card {
+  border-color: color-mix(in srgb, var(--card-accent) 55%, transparent);
+  box-shadow: 0 24px 80px -24px color-mix(in srgb, var(--card-accent) 25%, transparent);
+  transition: transform 350ms ease-out;
+  transform-origin: center;
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .cardStage[data-pressed='true'] .card {
+    transform: perspective(900px) translateZ(var(--card-press-z)) rotateX(var(--card-tilt-x)) rotateY(var(--card-tilt-y));
+    transition-duration: 100ms;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card { transition: none; }
+}
+.card[data-card-glow='true'] {
+  border-color: var(--card-accent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--card-accent) 70%, transparent), 0 0 30px color-mix(in srgb, var(--card-accent) 30%, transparent), inset 0 0 18px color-mix(in srgb, var(--card-accent) 15%, transparent);
+}
+.card[data-card-glow='true']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 12px color-mix(in srgb, var(--card-accent) 35%, transparent);
+}
+.card .placeholder { background: radial-gradient(ellipse at top, color-mix(in srgb, var(--card-accent) 35%, #17131e), #17131e 80%); }
+.details a, .card nav a, .card nav button, .details button:has(> svg + span) {
+  border: 1px solid color-mix(in srgb, var(--card-accent) 35%, transparent);
+  background: linear-gradient(115deg, color-mix(in srgb, var(--card-accent) 13%, transparent), #ffffff08);
+  border-radius: 1rem;
+}
+.details[data-rounded='false'] a, .card[data-rounded='false'] nav a, .card[data-rounded='false'] nav button, .details[data-rounded='false'] button:has(> svg + span) { border-radius: .35rem; }
+.details[data-button-glow='true'] a, .card[data-button-glow='true'] nav a, .card[data-button-glow='true'] nav button, .details[data-button-glow='true'] button:has(> svg + span) {
+  border-color: color-mix(in srgb, var(--card-accent) 80%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--card-accent) 25%, transparent), inset 0 0 12px color-mix(in srgb, var(--card-accent) 10%, transparent);
+}
+.details a:hover, .card nav a:hover, .card nav button:hover { background-color: color-mix(in srgb, var(--card-accent) 18%, transparent); }
+.card nav a:focus-visible, .details a:focus-visible, .details button:focus-visible, .card button:focus-visible { outline: 2px solid var(--card-accent-ink); outline-offset: 3px; }
+.card nav a svg, .details a svg, .details button > svg, .card button > svg { color: var(--card-accent-ink); }
+.card[data-light='true'] { background: #fff; color: #18181b; }
+.card[data-light='true'] .placeholder { background: radial-gradient(ellipse at top, color-mix(in srgb, var(--card-accent) 15%, white), white 80%); }
+.card[data-light='true'] .overlay { background: linear-gradient(180deg, #ffffff00 0%, #ffffff00 35%, #ffffff4d 55%, #ffffffa6 75%, #fffffff2 100%); }
+.card[data-light='true'] p, .details[data-light='true'] a, .card[data-light='true'] nav a, .card[data-light='true'] nav button, .details[data-light='true'] button:has(> svg + span) { color: #18181b; }
+.card[data-light='true'] button > span, .details[data-light='true'] a > svg:last-child { color: #52525b; }
+
+.details[data-light='true'] :is(a, button) span { color: #18181b; }

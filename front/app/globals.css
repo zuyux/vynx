@@ -155,6 +155,46 @@
   }
 }
 
+/* Keep native select controls and their popup options readable on dark surfaces. */
+select,
+select option,
+select optgroup {
+  color-scheme: dark;
+  background-color: #101015;
+  color: #fff;
+}
+
+.offer-time-input {
+  color-scheme: dark;
+}
+.offer-time-input::-webkit-calendar-picker-indicator {
+  filter: brightness(0) invert(1);
+  opacity: 1;
+}
+
+.card-preview-scrollbar,
+html:has(.card-preview-scrollbar) {
+  color-scheme: dark;
+  scrollbar-color: #52525b #101015;
+  scrollbar-width: thin;
+}
+.card-preview-scrollbar::-webkit-scrollbar,
+html:has(.card-preview-scrollbar)::-webkit-scrollbar { width: 10px; }
+.card-preview-scrollbar::-webkit-scrollbar-track,
+html:has(.card-preview-scrollbar)::-webkit-scrollbar-track { background: #101015; }
+.card-preview-scrollbar::-webkit-scrollbar-thumb,
+html:has(.card-preview-scrollbar)::-webkit-scrollbar-thumb {
+  background: #52525b;
+  border: 2px solid #101015;
+  border-radius: 999px;
+}
+.card-preview-scrollbar::-webkit-scrollbar-thumb:hover,
+html:has(.card-preview-scrollbar)::-webkit-scrollbar-thumb:hover { background: #71717a; }
+body:has(.preview-resize-handle[data-resizing='true']) {
+  cursor: col-resize;
+  user-select: none;
+}
+
 /* A restrained monochrome design for the public frontend proposal. */
 .landing-page {
   color-scheme: dark;

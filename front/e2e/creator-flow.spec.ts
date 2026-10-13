@@ -34,7 +34,7 @@ test('creator claims, publishes, reloads, receives a verified tip and logs out',
   const transactionsBeforeSignIn = await creatorPage.evaluate(() => (window as unknown as { walletTestCalls: { transaction: number } }).walletTestCalls.transaction);
   await creatorPage.getByRole('button', { name: 'Connect wallet', exact: true }).click();
   await creatorPage.getByRole('button', { name: 'Phantom', exact: true }).click();
-  await expect(creatorPage.getByRole('status')).toContainText('Your card is unpublished');
+  await expect(creatorPage.getByRole('status').filter({ hasText: 'Your card is unpublished' })).toBeVisible();
   await expect(creatorPage.getByRole('link', { name: 'Edit my creator card', exact: true })).toBeVisible();
   expect(await creatorPage.evaluate(() => (window as unknown as { walletTestCalls: { transaction: number } }).walletTestCalls.transaction)).toBe(transactionsBeforeSignIn);
 
@@ -43,7 +43,7 @@ test('creator claims, publishes, reloads, receives a verified tip and logs out',
   await creatorPage.getByRole('button', { name: 'Connect wallet', exact: true }).click();
   await creatorPage.getByRole('button', { name: 'Phantom', exact: true }).click();
   await expect(creatorPage).toHaveURL(`/${alias}`);
-  await expect(creatorPage.getByRole('status')).toContainText('Your card is unpublished');
+  await expect(creatorPage.getByRole('status').filter({ hasText: 'Your card is unpublished' })).toBeVisible();
   const anonymousPage = await browser.newPage();
   expect([200, 404]).toContain((await anonymousPage.goto(`/${alias}`))?.status());
   await expect(anonymousPage.getByRole('heading', { name: 'Card unavailable' })).toBeVisible();
@@ -54,11 +54,14 @@ test('creator claims, publishes, reloads, receives a verified tip and logs out',
   for (const width of [320, 375, 430]) {
     await creatorPage.setViewportSize({ width, height: 844 });
     expect(await creatorPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    for (const name of ["Save and publish", "Save local draft", "Reload my saved profile", "Save without publishing", "Disconnect"]) {
+    for (const name of ["Save and publish", "Save local draft", "Reload my saved profile", "Save without publishing"]) {
       const action = creatorPage.getByRole('button', { name, exact: true });
       expect(await action.evaluate(element => Math.abs(element.getBoundingClientRect().width - element.parentElement!.getBoundingClientRect().width) < 2), `${name} fills its action group at ${width}px`).toBe(true);
       expect((await action.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     }
+    const disconnect = await creatorPage.getByRole('button', { name: 'Disconnect', exact: true }).boundingBox();
+    expect(disconnect!.width).toBeGreaterThanOrEqual(44);
+    expect(disconnect!.height).toBeGreaterThanOrEqual(44);
     await creatorPage.getByRole('tab', { name: "Offers", exact: true }).click();
     expect(await creatorPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await creatorPage.getByRole('tab', { name: "Profile", exact: true }).click();
@@ -222,14 +225,14 @@ test('profile images, socials and theme persist; unpublished pages stay private'
   await expect(page.getByLabel("Upload cover")).toHaveCount(0);
   await page.getByLabel("Receive tips in USDC").uncheck();
   await page.getByRole('tab', { name: "Appearance", exact: true }).click();
-  await page.getByLabel("Light", { exact: true }).check();
+  await page.getByRole('group', { name: 'Page background' }).getByRole('radio', { name: 'White', exact: true }).check();
   await page.getByRole('tab', { name: "Socials", exact: true }).click();
-  await page.getByLabel('YouTube', { exact: true }).fill('http://youtube.com/unsafe');
-  await expect(page.getByLabel('YouTube', { exact: true })).toHaveAttribute('aria-invalid', 'true');
-  await page.getByLabel('YouTube', { exact: true }).fill('https://youtube.com/@mobilecreator');
+  await page.getByRole('textbox', { name: 'YouTube', exact: true }).fill('http://youtube.com/unsafe');
+  await expect(page.getByRole('textbox', { name: 'YouTube', exact: true })).toHaveAttribute('aria-invalid', 'true');
+  await page.getByRole('textbox', { name: 'YouTube', exact: true }).fill('https://youtube.com/@mobilecreator');
   expect((await new AxeBuilder({ page }).include('[data-slot="tabs"]').withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
   await page.screenshot({ path: testInfo.outputPath('card-editor-mobile.png'), fullPage: true });
-  await expect(page.getByLabel('YouTube', { exact: true })).toHaveAttribute('aria-invalid', 'false');
+  await expect(page.getByRole('textbox', { name: 'YouTube', exact: true })).toHaveAttribute('aria-invalid', 'false');
   await page.getByRole('button', { name: "Save and publish", exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Design published' })).toBeVisible();
   const saved = await db().from('cards_users').select('design,tips_enabled').eq('username', alias).single();
@@ -265,6 +268,7 @@ test('profile images, socials and theme persist; unpublished pages stay private'
   await page.getByRole('button', { name: 'Edit creator name', exact: true }).click();
   await page.getByLabel('Creator name', { exact: true }).fill('Updated portrait creator');
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await page.getByRole('button', { name: 'Phantom', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Card updated.' })).toBeVisible();
   await page.getByRole('button', { name: 'Edit creator bio', exact: true }).click();
   await page.getByLabel('Creator bio', { exact: true }).fill('Edited directly on my card.');
@@ -298,6 +302,7 @@ test('profile images, socials and theme persist; unpublished pages stay private'
   await page.goto('/dashboard/card');
 
   await page.getByRole('button', { name: "Save without publishing", exact: true }).click();
+  await page.getByRole('button', { name: 'Phantom', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Your public page is hidden' })).toBeVisible();
   const hidden = await publicPage.request.get(`/${alias}`); expect([200, 404]).toContain(hidden.status()); expect(await hidden.text()).toContain('Card unavailable');
   const exposed = await publicPage.request.get(`/api/profile?wallet=${owner.publicKey.toBase58()}`);

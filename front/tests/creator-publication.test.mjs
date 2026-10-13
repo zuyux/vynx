@@ -41,3 +41,44 @@ test('publication enforces the server image size limit', () => {
   assert.throws(() => publicationFields({...design,avatar:tooLarge}));
   assert.throws(() => publicationFields({...design,avatar:'data:image/png;base64,AAA'}));
 });
+
+test('appearance colors and glow survive publication while older drafts remain compatible', () => {
+  for (const accent of ['purple', 'red', 'blue', 'cyan', 'yellow', 'orange', 'black', 'white']) {
+    const result = publicationFields({...design, accent, theme: 'light', cardGlow: true, buttonGlow: true});
+    assert.equal(result.accent, accent);
+    assert.equal(result.cardGlow, true);
+    assert.equal(result.buttonGlow, true);
+    assert.equal(result.theme, 'light');
+  }
+  assert.equal(readDraft(JSON.stringify(design)).cardGlow, false);
+  assert.equal(readDraft(JSON.stringify(design)).buttonGlow, false);
+  for (const change of [{accent: 'invalid'}, {cardGlow: 'true'}, {buttonGlow: 1}]) {
+    assert.throws(() => publicationFields({...design, ...change}));
+  }
+});
+
+test('offer rows survive saving and publication with normalized safe destinations', () => {
+  const offer = { id: 'offer-1', type: 'digital', title: ' Guide ', description: ' A useful guide ', price: ' 25 ', url: 'https://example.com', extra: true };
+  const result = publicationFields({ ...design, offers: [offer] });
+  assert.deepEqual(result.offers, [{ id: 'offer-1', type: 'digital', title: 'Guide', description: 'A useful guide', price: '25', url: 'https://example.com/' }]);
+  assert.deepEqual(readDraft(JSON.stringify(result)).offers, result.offers);
+  const legacy = { ...EMPTY_DRAFT };
+  delete legacy.offers;
+  assert.deepEqual(readDraft(JSON.stringify(legacy)).offers, []);
+  for (const invalid of [{ ...offer, url: 'javascript:alert(1)' }, { ...offer, title: ' ' }, { ...offer, type: 'unknown' }]) {
+    assert.throws(() => publicationFields({ ...design, offers: [invalid] }));
+  }
+  assert.throws(() => publicationFields({ ...design, offers: [offer, offer] }));
+  assert.throws(() => publicationFields({ ...design, offers: Array.from({ length: 9 }, (_, index) => ({ ...offer, id: String(index) })) }));
+});
+
+test('more details pages are optional for every offer and always require safe HTTPS URLs', () => {
+  const offer = { id: 'details', type: 'digital', title: 'Guide', description: '', price: '25', url: '', billingPeriod: 'session' };
+  for (const billingPeriod of ['session', 'month']) {
+    assert.equal(publicationFields({ ...design, offers: [{ ...offer, billingPeriod }] }).offers[0].url, '');
+    assert.equal(publicationFields({ ...design, offers: [{ ...offer, billingPeriod, url: 'https://example.com' }] }).offers[0].url, 'https://example.com/');
+    for (const url of ['javascript:alert(1)', 'http://example.com', 'https://user:password@example.com']) {
+      assert.throws(() => publicationFields({ ...design, offers: [{ ...offer, billingPeriod, url }] }));
+    }
+  }
+});

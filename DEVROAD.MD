@@ -207,8 +207,8 @@ Goal: deliver a real, shareable creator card backed by Supabase.
 - [x] **P1** Add per-profile metadata, canonical URL, Open Graph image, and social preview text.
 - [x] **P1** Add copy-link and native share actions.
 - [x] **P1** Prevent dashboard, API, asset, and reserved route collisions if using a root-level username route.
-- [ ] **P1** Add loading and empty states without exposing internal errors.
-- [ ] **P1** Verify accessibility: keyboard navigation, focus states, labels, color contrast, and reduced-motion behavior.
+- [x] **P1** Add loading and empty states without exposing internal errors. Public creator loading/unavailable states, safe page error boundaries and sanitized client feedback are implemented; loading/error privacy tests pass in the 143-test frontend suite.
+- [ ] **P1** Verify accessibility: keyboard navigation, focus states, labels, color contrast, and reduced-motion behavior. October 12, 2026 recheck found zero axe violations on 12 route fixtures, but the suite stopped at a stale Spanish editor control locator (`Apariencia`); update the check and rerun the remaining keyboard, focus and reduced-motion assertions. See [verification coverage](front/docs/accessibility.md).
 
 Acceptance criteria:
 
@@ -292,7 +292,7 @@ Start after the full alias-to-tip MVP passes end-to-end tests. The first version
 - [x] **P2** Allow only the paying fan to submit one review per completed booking, with an overall rating, comment, and feedback on punctuality, communication, and fulfillment of the offered service.
 - [x] **P2** Show verified completed-call counts, average ratings, review counts, and comments on the public Creator Card, with an empty state for creators without history.
 - [ ] **P2** Define cancellation deadlines and handling for creator/fan no-shows, connection failures, refunds, disputes, and abusive reviews.
-- [x] **P2** Verify booking authorization, slot conflicts, payment retries, attendance event retries, review eligibility, rating aggregation, and refund/settlement behavior with automated tests. PostgreSQL concurrency checks, API tests, and LiteSVM escrow deadline/allocation tests pass; see [coverage and commands](front/docs/booking-test-coverage.md).
+- [x] **P2** Verify booking authorization, slot conflicts, payment retries, attendance event retries, review eligibility, rating aggregation, and refund/settlement behavior with automated tests. Reverified frontend/API tests, isolated PostgreSQL migration/security/concurrency checks and nine LiteSVM escrow tests on October 12, 2026. Resolver orchestration and production deployment verification remain pending; see [coverage and commands](front/docs/booking-test-coverage.md).
 
 Acceptance criteria:
 

@@ -1,3 +1,4 @@
+import { CREATOR_ACCENTS } from '@/lib/creator-draft';
 import { ImageResponse } from 'next/og';
 import sharp from 'sharp';
 import { storedCreatorImage, MAX_CREATOR_IMAGE_BYTES, MAX_CREATOR_IMAGE_DIMENSION } from './creator-image-policy';
@@ -37,7 +38,7 @@ export async function ogPortrait(value: string): Promise<string | null> {
 
 export function creatorOgImage(creator: PublicCreator, portrait: string | null) {
   const { design, alias } = creator;
-  const accent = { mint: '#8cf4c5', violet: '#c4a2ff', rose: '#ffa5c9' }[design.accent];
+  const accent = CREATOR_ACCENTS[design.accent];
   return new ImageResponse(
     <div style={{ display: 'flex', width: '100%', height: '100%', background: '#08080b', color: 'white', padding: 36, alignItems: 'center', gap: 64 }}>
       <div style={{ display: 'flex', position: 'relative', width: 345, height: 558, flexShrink: 0, borderRadius: 28, overflow: 'hidden', border: '1px solid #70528d', background: 'linear-gradient(145deg, #643676, #17131e)', flexDirection: 'column', justifyContent: 'flex-end' }}>

@@ -1,0 +1,42 @@
+{
+  "network": "devnet",
+  "source": "5iCqk1v4KYrNtwdarsZo977Qd7EqweJfZ2CRNPfZJykH",
+  "signature": "2Pj1kWst6UhvxnswAF415uNhfGZv2HALv9VhQAG15zds9oUzdWEpDEnrhJjPSmuuiVTGbAPex281rcZmpJmqeR3n",
+  "blockhash": "BUvjP4CCZ6sghsHDJF6EnHKQHFG1ex1dab5W8XAsfwHk",
+  "lastValidBlockHeight": 497383851,
+  "profiles": [
+    {
+      "alias": "demo_lunastudio",
+      "address": "D8tFuzqbWPA2rDWnpvtNEwZ6kLgDtAp4f61aH4PBftRP",
+      "price_lamports": 10000000,
+      "target_lamports": 30000000,
+      "balance_lamports": 0,
+      "topup_lamports": 30000000
+    },
+    {
+      "alias": "demo_mateobeats",
+      "address": "5PcLXyAGVjFDPPJRVQxSp2mn3ZXTkr4qFSegyK4jNyg9",
+      "price_lamports": 10000000,
+      "target_lamports": 30000000,
+      "balance_lamports": 0,
+      "topup_lamports": 30000000
+    },
+    {
+      "alias": "demo_sofiaframes",
+      "address": "4EGxEaVnQa8V9Yp7B9Znm3F2ijGPu5gSbq4Q5mX2MgMe",
+      "price_lamports": 10000000,
+      "target_lamports": 30000000,
+      "balance_lamports": 0,
+      "topup_lamports": 30000000
+    },
+    {
+      "alias": "demo_kaiworks",
+      "address": "ANMonT1TE4WD3UE4WHs2w1WuiV4WMAmrEiBpxeSVXHDW",
+      "price_lamports": 10000000,
+      "target_lamports": 30000000,
+      "balance_lamports": 0,
+      "topup_lamports": 30000000
+    }
+  ],
+  "confirmed": true
+}

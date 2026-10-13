@@ -45,10 +45,9 @@ test('booking UI preserves uncertain sends, recovers by signature and fits mobil
   expect(checkouts).toBe(1);
   await page.reload();
   const connect = page.getByRole('button', { name: "Connect wallet to book" });
-  if (await connect.isVisible()) {
-    await connect.click();
-    await page.getByRole('button', { name: 'Phantom', exact: true }).click();
-  }
+  await expect(connect).toBeVisible();
+  await connect.click();
+  await page.getByRole('button', { name: 'Phantom', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Continue / verify booking' })).toBeVisible();
   await page.getByLabel("Signature to recover a submitted payment (optional)").fill('1'.repeat(88));
   await page.getByRole('button', { name: 'Continue / verify booking' }).click();
