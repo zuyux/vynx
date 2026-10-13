@@ -182,4 +182,4 @@ Daily operating funds and automatic billing: [treasury specification](docs/daily
 
 ## License
 
-GNU AGPLv3. See `LICENSE` when present in the distribution.
+GNU AGPLv3. Copyright (C) 2026 zuyux. See [LICENSE](LICENSE).
