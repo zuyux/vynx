@@ -129,7 +129,7 @@ export async function fixtureServer(databaseUrl, registryOptions, storageKey) {
           const pending = delays.get(rpc.params[0]) ?? 0;
           if (pending > 0) delays.set(rpc.params[0], pending - 1);
           result = pending > 0 ? null : ledger.get(rpc.params[0]) ?? null;
-          if (result && rpc.params[1]?.encoding !== 'jsonParsed') result = { ...result, transaction: { ...result.transaction, message: rawMessages.get(rpc.params[0]) } };
+          if (result && rpc.params[1]?.encoding !== 'jsonParsed') result = { ...result, transaction: { ...result.transaction, message: rawMessages.get(rpc.params[0]) ?? result.transaction.message } };
           break;
         }
         case 'getSignatureStatuses': result = { context: { slot }, value: rpc.params[0].map(signature => ledger.has(signature) ? { slot, confirmations: null, err: ledger.get(signature).meta.err, confirmationStatus: 'finalized' } : null) }; break;

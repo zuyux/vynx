@@ -28,7 +28,7 @@ test('browser registers a one-character alias with sponsorship, publishes and re
   await signIn(page, '/dashboard/card'); await expect(page).toHaveURL(/profile\/buy-alias/);
   await page.getByLabel('Alias', { exact: true }).fill(alias);
   await expect(page.getByRole('button', { name: 'Claim alias — 0.92 SOL' })).toBeEnabled();
-  await expect(page.getByText(/VYNX pays network fees/)).toBeVisible();
+  await expect(page.getByText(/One alias per wallet/)).toContainText('VYNX pays network fees');
   await page.getByRole('button', { name: 'Claim alias — 0.92 SOL' }).click();
   await expect(page).toHaveURL(/dashboard\/card/);
   await page.getByLabel("Creator name").fill('Registry creator');
