@@ -1,6 +1,6 @@
 // Deterministic RPC and Storage boundaries. Application validation/APIs and Postgres remain real.
 import http from 'node:http';
-import { Transaction, SystemInstruction, SystemProgram, Keypair } from '@solana/web3.js';
+import { ComputeBudgetProgram, Transaction, SystemInstruction, SystemProgram, Keypair } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, decodeTransferCheckedInstruction } from '@solana/spl-token';
 
@@ -108,6 +108,7 @@ export async function fixtureServer(databaseUrl, registryOptions, storageKey) {
             return { program: 'system', programId: SystemProgram.programId.toBase58(), parsed: { type: 'transfer', info: { source: transfer.fromPubkey.toBase58(), destination: transfer.toPubkey.toBase58(), lamports: Number(transfer.lamports) } } };
           }
           if (instruction.programId.toBase58() === MEMO) return { program: 'spl-memo', programId: MEMO, parsed: instruction.data.toString() };
+          if (instruction.programId.equals(ComputeBudgetProgram.programId)) return { programId: instruction.programId.toBase58(), accounts: [], data: bs58.encode(instruction.data) };
           throw new Error('Unexpected instruction in test payment.');
         });
         rawMessages.set(signature, { header: message.header, accountKeys: keys.map(key => key.toBase58()), instructions: message.instructions, recentBlockhash: message.recentBlockhash });

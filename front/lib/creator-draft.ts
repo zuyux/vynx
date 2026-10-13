@@ -11,12 +11,12 @@ export type CreatorDraft = {
   version: 1; alias: string; name: string; bio: string; avatar: string; cover: string;
   accent: keyof typeof CREATOR_ACCENTS; cardGlow?: boolean; buttonGlow?: boolean; theme: 'dark' | 'light'; rounded: boolean;
   offers?: CreatorOffer[];
-  links: CreatorLink[]; socials: { instagram: string; youtube: string; x: string };
+  links: CreatorLink[]; socials: { instagram: string; youtube: string; x: string; tiktok?: string };
 };
 export const DRAFT_KEY = 'vynx:creator-draft:v1';
 export const EMPTY_DRAFT: CreatorDraft = {
   version: 1, alias: '', name: '', bio: '', avatar: '', cover: '', accent: 'mint',
-  theme: 'dark', rounded: true, offers: [], links: [], socials: { instagram: '', youtube: '', x: '' },
+  theme: 'dark', rounded: true, offers: [], links: [], socials: { instagram: '', youtube: '', x: '', tiktok: '' },
 };
 export function safeLink(value: string) {
   try {
@@ -47,7 +47,7 @@ export function readDraft(raw: string | null): CreatorDraft {
       !Array.isArray(value.links) || value.links.length > 8 ||
       !value.links.every((link: CreatorLink) => link && bounded(link.id, 60) && bounded(link.title, 60) && bounded(link.url, 500)) ||
       new Set(value.links.map((link: CreatorLink) => link.id)).size !== value.links.length ||
-      !value.socials || !['instagram', 'youtube', 'x'].every(key => bounded(value.socials[key], 500))) {
+      !value.socials || (value.socials.tiktok !== undefined && !bounded(value.socials.tiktok, 500)) || !['instagram', 'youtube', 'x'].every(key => bounded(value.socials[key], 500))) {
     throw new UserFacingError("The saved draft is incompatible. You can create a new one.");
   }
   // Return only supported fields; never persist arbitrary client properties.
@@ -56,7 +56,7 @@ export function readDraft(raw: string | null): CreatorDraft {
     cardGlow: value.cardGlow ?? false, buttonGlow: value.buttonGlow ?? false,
     offers: (value.offers ?? []).map((offer: CreatorOffer) => ({ id: offer.id, type: offer.type, title: offer.title, description: offer.description, price: offer.price, url: offer.url, ...readOfferTerms(offer) })),
     rounded: value.rounded, links: value.links.map((link: CreatorLink) => ({ id: link.id, title: link.title, url: link.url })),
-    socials: { instagram: value.socials.instagram, youtube: value.socials.youtube, x: value.socials.x } };
+    socials: { instagram: value.socials.instagram, youtube: value.socials.youtube, x: value.socials.x, tiktok: value.socials.tiktok ?? '' } };
 }
 export function publicationFields(value: unknown): CreatorDraft {
   const draft = readDraft(JSON.stringify(value) ?? null);
@@ -66,7 +66,8 @@ export function publicationFields(value: unknown): CreatorDraft {
     offers: (draft.offers ?? []).map(offer => ({ ...offer, title: offer.title.trim(), description: offer.description.trim(), price: offer.price.trim(), url: offer.url ? safeLink(offer.url) ?? '' : '' })),
     links: draft.links.map(link => ({ ...link, title: link.title.trim(), url: safeLink(link.url)! })),
     socials: { instagram: draft.socials.instagram ? safeLink(draft.socials.instagram)! : '',
-      youtube: draft.socials.youtube ? safeLink(draft.socials.youtube)! : '', x: draft.socials.x ? safeLink(draft.socials.x)! : '' } };
+      youtube: draft.socials.youtube ? safeLink(draft.socials.youtube)! : '', x: draft.socials.x ? safeLink(draft.socials.x)! : '',
+      tiktok: draft.socials.tiktok ? safeLink(draft.socials.tiktok)! : '' } };
 }
 export function draftFromProfile(profile: { alias: string; display_name: string; bio: string; website?: string; design?: unknown }): CreatorDraft {
   const draft = profile.design ? readDraft(JSON.stringify(profile.design)) : structuredClone(EMPTY_DRAFT);

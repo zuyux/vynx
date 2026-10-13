@@ -27,6 +27,8 @@ pub const RESERVED: &[&str] = &[
     "sitemap",
     "_next",
     "help",
+    "docs",
+    "brand",
     "security",
     "treasury",
     "official",

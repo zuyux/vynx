@@ -6,7 +6,7 @@ import { aliasConnection } from '@/lib/alias-network';
 import { tipLamports, MEMO_PROGRAM, validPaymentSignature, verifySolPayment } from '@/lib/sol-payment';
 import { walletKey } from '@/lib/sponsorship-server';
 import { ApiError } from '@/lib/wallet-session';
-import { createAssociatedTokenAccountIdempotentInstruction, createTransferCheckedInstruction, getAssociatedTokenAddressSync } from '@solana/spl-token';
+import { createAssociatedTokenAccountIdempotentInstruction, createTransferCheckedInstruction, getAssociatedTokenAddressSync, unpackAccount } from '@solana/spl-token';
 import { PublicKey } from '@solana/web3.js';
 import { DEVNET_USDC_MINT, tipCurrency, tipUsdcUnits } from './tip-currency';
 import { verifyUsdcPayment } from './usdc-payment';
@@ -22,13 +22,17 @@ export async function buildTip(alias: string, wallet: string, amount: string, cu
   if (payer.equals(recipient)) throw new ApiError('Use a different wallet to tip this creator.');
   const units = tipUsdcUnits(amount);
   const connection = await aliasConnection();
+  const mint = new PublicKey(DEVNET_USDC_MINT);
+  const source = getAssociatedTokenAddressSync(mint, payer);
+  const sourceInfo = await connection.getAccountInfo(source, 'confirmed');
+  if (!sourceInfo || unpackAccount(source, sourceInfo).amount < BigInt(units)) {
+    throw new ApiError('Not enough devnet USDC in your wallet. Add devnet USDC test tokens or choose a smaller tip. Network fees are sponsored.', 400, 'INSUFFICIENT_USDC');
+  }
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
   const { signer_address } = await koraRpc<{ signer_address: string }>('getPayerSigner');
   const feePayer = walletKey(signer_address);
   if (feePayer.equals(payer) || feePayer.equals(recipient)) throw new ApiError('The sponsor must use a separate wallet.', 503);
   const transaction = new Transaction({ feePayer, blockhash, lastValidBlockHeight });
-  const mint = new PublicKey(DEVNET_USDC_MINT);
-  const source = getAssociatedTokenAddressSync(mint, payer);
   const destination = getAssociatedTokenAddressSync(mint, recipient);
   transaction.add(createAssociatedTokenAccountIdempotentInstruction(feePayer, destination, recipient, mint));
   transaction.add(createTransferCheckedInstruction(source, mint, destination, payer, units, 6));

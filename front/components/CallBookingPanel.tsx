@@ -1,6 +1,8 @@
 'use client';
+import { useCopy } from "@/i18n/copy";
 
-import Link from 'next/link';
+
+import Link from '@/i18n/link';
 
 import { useEffect, useRef, useState } from 'react';
 import { Transaction } from '@solana/web3.js';
@@ -18,6 +20,7 @@ async function post(body: unknown) {
   return result;
 }
 export default function CallBookingPanel({ alias }: { alias: string }) {
+  const t = useCopy();
   const session = useWalletSession();
   const [schedule, setSchedule] = useState<{ offer: CallOffer; slots: string[] } | null>(null);
   const [slot, setSlot] = useState('');
@@ -69,17 +72,17 @@ export default function CallBookingPanel({ alias }: { alias: string }) {
       }
       const response = await fetch(`/api/bookings?id=${encodeURIComponent(recovery.id)}`, { cache: 'no-store' });
       const status = await response.json();
-      if (!response.ok) throw responseError(response, status, "Could not recover the booking.");
+      if (!response.ok) throw responseError(response, status, t("Could not recover the booking."));
       setBooking(status.booking);
-      if (status.booking.state === 'confirmed') { setNotice("Booking confirmed. The escrow deposit was verified."); return; }
+      if (status.booking.state === 'confirmed') { setNotice(t("Booking confirmed. The escrow deposit was verified.")); return; }
       if (recovery.signature || manualSignature.trim()) {
         const signature = recovery.signature ?? manualSignature.trim();
         const result = await confirmPayment(() => post({ action: 'confirm', id: recovery!.id, signature }));
-        setBooking(result.booking); setNotice("Booking confirmed. The escrow deposit was verified.");
+        setBooking(result.booking); setNotice(t("Booking confirmed. The escrow deposit was verified."));
         localStorage.setItem(key, JSON.stringify({ id: recovery.id, signature }));
         return;
       }
-      if (recovery.sending) throw new UserFacingError("The submission result is uncertain. Retrieve the signature in your wallet and verify the payment before sending again.");
+      if (recovery.sending) throw new UserFacingError(t("The submission result is uncertain. Retrieve the signature in your wallet and verify the payment before sending again."));
       const result = await post({ action: 'checkout', id: recovery.id });
       if (result.booking.state === 'confirmed') { setBooking(result.booking); return; }
       const transaction = Transaction.from(Uint8Array.from(atob(result.transaction), c => c.charCodeAt(0)));
@@ -90,28 +93,28 @@ export default function CallBookingPanel({ alias }: { alias: string }) {
       localStorage.setItem(key, JSON.stringify(recovery));
       setManualSignature(signature);
       const confirmed = await confirmPayment(() => post({ action: 'confirm', id: recovery!.id, signature }));
-      setBooking(confirmed.booking); setNotice("Booking confirmed. The escrow deposit was verified.");
-    } catch (reason) { setNotice(userErrorMessage(reason, "Could not complete the booking. Keep the signature and retry verification.")); }
+      setBooking(confirmed.booking); setNotice(t("Booking confirmed. The escrow deposit was verified."));
+    } catch (reason) { setNotice(userErrorMessage(reason, t("Could not complete the booking. Keep the signature and retry verification."))); }
     finally { inFlight.current = false; setBusy(false); }
   }
   if (!schedule) return null;
-  const format = (instant: string) => new Intl.DateTimeFormat('en', { timeZone: booking?.terms.timezone ?? schedule.offer.timezone, dateStyle: 'medium', timeStyle: 'short' }).format(new Date(instant));
+  const format = (instant: string) => new Intl.DateTimeFormat(t.locale, { timeZone: booking?.terms.timezone ?? schedule.offer.timezone, dateStyle: 'medium', timeStyle: 'short' }).format(new Date(instant));
   return <section className="mt-6 rounded-2xl border border-current/15 p-6">
-    <h2 className="text-xl font-semibold">Book a call</h2>
-    <p className="mt-2">{booking?.terms.title ?? schedule.offer.title} · {booking?.terms.duration_minutes ?? schedule.offer.duration_minutes} min · {booking ? callPrice(booking.price_units) : schedule.offer.price} USDC</p>
-    <p className="mt-2 text-sm opacity-70">Solana devnet · test tokens · custom unaudited escrow. Your wallet pays account deposits and network fees.</p>
-    <p className="mt-3 text-sm">Funds are held until resolution. Full refund if the creator cancels or you cancel at least 24 hours in advance. You can dispute up to 24 hours after the call. A Vynx resolver decides the split; after 30 days without resolution you can recover the principal.</p>
-    <label className="mt-4 block text-sm">Time slot ({schedule.offer.timezone})<select value={slot} disabled={busy || !!booking} onChange={event => setSlot(event.target.value)} className="mt-2 w-full rounded-lg border border-current/20 bg-transparent p-3"><option value="">Select a time slot</option>{schedule.slots.map(value => <option key={value} value={value}>{format(value)} · {value}</option>)}</select></label>
-    {!schedule.slots.length && <p className="mt-2 text-sm">No slots are available in the next 14 days.</p>}
-    <label className="mt-4 flex gap-2 text-sm"><input type="checkbox" checked={accepted} disabled={busy || !!booking} onChange={event => setAccepted(event.target.checked)} />I accept the devnet escrow terms described above.</label>
-    {booking && <p className="mt-3 text-sm">Booking {booking.id} · {format(booking.starts_at)} · {booking.state.replaceAll('_', ' ')}</p>}
-    {booking?.state === 'confirmed' && <Link href={`/calls/${booking.id}`} className="mt-4 block rounded-xl border border-violet-400/40 p-4 text-violet-300 underline">Open private call</Link>}
-    {(!booking || booking.state === 'awaiting_payment') && <><label className="mt-4 block text-sm">Signature to recover a submitted payment (optional)<input value={manualSignature} onChange={event => setManualSignature(event.target.value)} disabled={busy} className="mt-2 w-full rounded-lg border border-current/20 bg-transparent p-3" /></label><button type="button" disabled={busy || (!!session.connectedWallet && !booking && (!slot || !accepted))} onClick={() => void checkout()} className="mt-4 rounded-xl bg-violet-400 px-5 py-3 font-semibold text-black disabled:opacity-40">{busy ? 'Verifying…' : !session.connectedWallet ? "Connect wallet to book" : booking ? 'Continue / verify booking' : 'Book and pay into escrow'}</button></>}
-    {notice && <p role="status" className="mt-4 break-words text-sm">{notice}</p>}
+    <h2 className="text-xl font-semibold">{t("Book a call")}</h2>
+    <p className="mt-2">{booking?.terms.title ?? schedule.offer.title} · {booking?.terms.duration_minutes ?? schedule.offer.duration_minutes}{t(" min · ")}{booking ? callPrice(booking.price_units) : schedule.offer.price}{t(" USDC")}</p>
+    <p className="mt-2 text-sm opacity-70">{t("Solana devnet · test tokens · custom unaudited escrow. Your wallet pays account deposits and network fees.")}</p>
+    <p className="mt-3 text-sm">{t("Funds are held until resolution. Full refund if the creator cancels or you cancel at least 24 hours in advance. You can dispute up to 24 hours after the call. A Vynx resolver decides the split; after 30 days without resolution you can recover the principal.")}</p>
+    <label className="mt-4 block text-sm">{t("Time slot (")}{schedule.offer.timezone})<select value={slot} disabled={busy || !!booking} onChange={event => setSlot(event.target.value)} className="mt-2 w-full rounded-lg border border-current/20 bg-transparent p-3"><option value="">{t("Select a time slot")}</option>{schedule.slots.map(value => <option key={value} value={value}>{format(value)} · {value}</option>)}</select></label>
+    {!schedule.slots.length && <p className="mt-2 text-sm">{t("No slots are available in the next 14 days.")}</p>}
+    <label className="mt-4 flex gap-2 text-sm"><input type="checkbox" checked={accepted} disabled={busy || !!booking} onChange={event => setAccepted(event.target.checked)} />{t("I accept the devnet escrow terms described above.")}</label>
+    {booking && <p className="mt-3 text-sm">{t("Booking ")}{booking.id} · {format(booking.starts_at)} · {t(booking.state.replaceAll('_', ' '))}</p>}
+    {booking?.state === 'confirmed' && <Link href={`/calls/${booking.id}`} className="mt-4 block rounded-xl border border-violet-400/40 p-4 text-violet-300 underline">{t("Open private call")}</Link>}
+    {(!booking || booking.state === 'awaiting_payment') && <><label className="mt-4 block text-sm">{t("Signature to recover a submitted payment (optional)")}<input value={manualSignature} onChange={event => setManualSignature(event.target.value)} disabled={busy} className="mt-2 w-full rounded-lg border border-current/20 bg-transparent p-3" /></label><button type="button" disabled={busy || (!!session.connectedWallet && !booking && (!slot || !accepted))} onClick={() => void checkout()} className="mt-4 rounded-xl bg-violet-400 px-5 py-3 font-semibold text-black disabled:opacity-40">{busy ? t('Verifying…') : !session.connectedWallet ? t("Connect wallet to book") : booking ? t('Continue / verify booking') : t('Book and pay into escrow')}</button></>}
+    {notice && <p role="status" className="mt-4 break-words text-sm">{t(notice)}</p>}
     {(booking?.state === 'confirmed' || booking?.state === 'expired') && <button type="button" disabled={busy} onClick={() => {
       try { localStorage.removeItem(`vynx:booking:v1:${session.wallet}:${alias}`); setBooking(null); setSlot(''); setAccepted(false); setManualSignature(''); setNotice(''); }
-      catch { setNotice("Could not clear this booking reference."); }
-    }} className="mt-3 rounded-lg border border-current/20 px-4 py-2">Choose another booking</button>}
-    {booking?.signature && <p className="mt-2 break-all text-xs">Signature: {booking.signature}</p>}
+      catch { setNotice(t("Could not clear this booking reference.")); }
+    }} className="mt-3 rounded-lg border border-current/20 px-4 py-2">{t("Choose another booking")}</button>}
+    {booking?.signature && <p className="mt-2 break-all text-xs">{t("Signature: ")}{booking.signature}</p>}
   </section>;
 }

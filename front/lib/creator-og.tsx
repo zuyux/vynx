@@ -53,10 +53,9 @@ export function creatorOgImage(creator: PublicCreator, portrait: string | null) 
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', width: 683 }}>
-        <div style={{ display: 'flex', fontSize: 24, letterSpacing: 6, color: accent, marginBottom: 32 }}>VYNX</div>
         <div style={{ display: 'flex', fontSize: 54, fontWeight: 700, wordBreak: 'break-word', lineHeight: 1.1 }}>{design.name}</div>
         <div style={{ display: 'flex', fontSize: 28, color: accent, marginTop: 18 }}>@{alias}</div>
-        <div style={{ display: 'flex', fontSize: 25, color: '#d0cad8', lineHeight: 1.4, marginTop: 28, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{design.bio.slice(0, 200) || `Support ${design.name} on VYNX.`}{design.bio.length > 200 ? '…' : ''}</div>
+        <div style={{ display: 'flex', fontSize: 25, color: '#d0cad8', lineHeight: 1.4, marginTop: 28, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{design.bio.slice(0, 200) || `Support ${design.name}.`}{design.bio.length > 200 ? '…' : ''}</div>
       </div>
     </div>,
     { width: 1200, height: 630, headers: { 'Cache-Control': 'no-store' } },

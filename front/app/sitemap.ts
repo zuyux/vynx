@@ -1,12 +1,13 @@
 import type { MetadataRoute } from 'next';
 import { publishedCreatorBatch } from '@/lib/published-creators';
 import { siteUrl } from '@/lib/seo';
+import { localizedHref } from '@/i18n/locale';
 
 export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [{ url: siteUrl(), changeFrequency: 'weekly', priority: 1 }];
-  for (const path of ['/help/terms', '/help/privacy', '/help/fees', '/help/network', '/support']) {
+  for (const path of ['/docs', '/brand', '/help/terms', '/help/privacy', '/help/fees', '/help/network', '/support']) {
     entries.push({ url: siteUrl(path), changeFrequency: 'monthly', priority: 0.3 });
   }
   // Supabase returns at most 1,000 rows by default. Page through the full list.
@@ -19,5 +20,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (entries.length > 50000) throw new Error('Split creator sitemaps before exceeding 50,000 URLs.');
     if (!hasMore) break;
   }
-  return entries;
+  return entries.map(entry => {
+    const pathname = new URL(entry.url).pathname;
+    return { ...entry, alternates: { languages: { en: entry.url, es: siteUrl(localizedHref(pathname, 'es')) } } };
+  });
 }

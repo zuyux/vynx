@@ -1,12 +1,13 @@
 import test from 'node:test';
 import { createServer } from 'node:http';
 import assert from 'node:assert/strict';
-import { Keypair, Transaction } from '@solana/web3.js';
+import { Keypair, PublicKey, Transaction } from '@solana/web3.js';
 import { GET, POST, OPTIONS } from '../app/api/actions/tip/[alias]/route.ts';
 import { POST as confirm, OPTIONS as confirmOptions } from '../app/api/actions/tip/[alias]/confirm/route.ts';
 import { GET as discovery, OPTIONS as discoveryOptions } from '../app/actions.json/route.ts';
 import { ALIAS_BLOCKCHAIN_ID, DEVNET_GENESIS_HASH } from '../lib/alias-network.ts';
-import { decodeTransferCheckedInstruction } from '@solana/spl-token';
+import { decodeTransferCheckedInstruction, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { DEVNET_USDC_MINT } from '../lib/tip-currency.ts';
 import { buildTip } from '../lib/tip-server.ts';
 import { MEMO_PROGRAM } from '../lib/sol-payment.ts';
 const origin = 'https://vynx.example';
@@ -24,10 +25,12 @@ test('public USDC Action builds sponsored tips and preserves legacy SOL verifica
   let published = true, enabled = true, rpcCalls = 0, payment = null, record = null, storageFails = false;
   const signature = '1'.repeat(88);
   const sponsor = Keypair.generate();
+  let balance = 2_000_000n, sponsorshipCalls = 0;
   globalThis.fetch = async (input, init) => {
     const req = new Request(input, init), url = new URL(req.url);
     if (url.pathname.endsWith('/rpc/consume_public_endpoint_limit')) return json({ allowed: true, retry_after: 60 });
     if (url.hostname === 'kora.example') {
+      sponsorshipCalls++;
       const rpc = await req.json();
       if (rpc.method === 'getPayerSigner') return json({ result: { signer_address: sponsor.publicKey.toBase58() } });
       const tx = Transaction.from(Buffer.from(rpc.params.transaction, 'base64'));
@@ -37,7 +40,11 @@ test('public USDC Action builds sponsored tips and preserves legacy SOL verifica
     if (url.hostname === 'rpc.example') {
       rpcCalls++;
       const rpc = await req.json();
-      const result = rpc.method === 'getGenesisHash' ? DEVNET_GENESIS_HASH : rpc.method === 'getLatestBlockhash' ? { context: { slot: 1 }, value: { blockhash: payer, lastValidBlockHeight: 150 } } : rpc.method === 'getTransaction' ? payment : undefined;
+      const account = Buffer.alloc(165);
+      new PublicKey(DEVNET_USDC_MINT).toBuffer().copy(account, 0);
+      new PublicKey(payer).toBuffer().copy(account, 32);
+      account.writeBigUInt64LE(balance ?? 0n, 64); account[108] = 1;
+      const result = rpc.method === 'getGenesisHash' ? DEVNET_GENESIS_HASH : rpc.method === 'getAccountInfo' ? { context: { slot: 1 }, value: balance === null ? null : { data: [account.toString('base64'), 'base64'], owner: TOKEN_PROGRAM_ID.toBase58(), executable: false, lamports: 2039280, rentEpoch: 0 } } : rpc.method === 'getLatestBlockhash' ? { context: { slot: 1 }, value: { blockhash: payer, lastValidBlockHeight: 150 } } : rpc.method === 'getTransaction' ? payment : undefined;
       assert.notEqual(result, undefined);
       return json({ jsonrpc: '2.0', id: rpc.id, result });
     }
@@ -100,6 +107,13 @@ test('public USDC Action builds sponsored tips and preserves legacy SOL verifica
     const defaultTip = await buildTip('alice', payer, '1');
     assert.equal(defaultTip.currency, 'USDC');
     assert.equal(defaultTip.sponsored, true);
+    const previousSponsorshipCalls = sponsorshipCalls;
+    for (const insufficient of [null, 0n, 999999n]) {
+      balance = insufficient;
+      await assert.rejects(buildTip('alice', payer, '1'), error => error.status === 400 && error.code === 'INSUFFICIENT_USDC');
+      assert.equal(sponsorshipCalls, previousSponsorshipCalls);
+    }
+    balance = 2_000_000n;
     assert.equal(record, null);
     const callback = () => request('POST', '?amount=0.01', { account: payer, signature });
     assert.equal((await confirm(callback(), context)).status, 409);

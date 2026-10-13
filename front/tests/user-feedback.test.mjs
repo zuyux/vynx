@@ -1,3 +1,5 @@
+import { TestIntlProvider } from "./helpers/intl-provider.tsx";
+import enMessages from "../messages/en.json" with { type: "json" };
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement } from 'react';
@@ -52,12 +54,12 @@ test('client feedback hides SDK and server failures without losing payment recov
 });
 
 test('loading states announce progress and page boundaries never render error messages or digests', () => {
-  const loading = renderToStaticMarkup(createElement(LoadingState, { label: 'Loading creator card…' }));
+  const loading = renderToStaticMarkup(createElement(TestIntlProvider, { locale: 'en', messages: enMessages, timeZone: 'America/Lima' }, createElement(LoadingState, { label: 'Loading creator card…' })));
   assert.match(loading, /role="status"/);
   assert.match(loading, /aria-busy="true"/);
   assert.match(loading, /Loading creator card/);
   for (const Component of [PageError, GlobalError]) {
-    const html = renderToStaticMarkup(createElement(Component, { error: Object.assign(new Error(internal), { digest: 'private-digest' }), retry() {} }));
+    const html = renderToStaticMarkup(createElement(TestIntlProvider, { locale: 'en', messages: enMessages, timeZone: 'America/Lima' }, createElement(Component, { error: Object.assign(new Error(internal), { digest: 'private-digest' }), retry() {} })));
     assert.match(html, /Try again/);
     assert.equal(html.includes('secret'), false);
     assert.equal(html.includes('private-digest'), false);

@@ -8,6 +8,7 @@ import { PublicKey } from '@solana/web3.js';
 import { publicationFields } from '@/lib/creator-draft';
 import { apiFailure, ApiError, assertOrigin, requireWallet } from '@/lib/wallet-session';
 import { appDb } from '@/lib/app-db';
+import { authorize, issueChallenge } from '@/lib/sponsorship-server';
 
 const reply = (body: unknown, status = 200) => Response.json(body, {
   status, headers: { 'Cache-Control': 'no-store' },
@@ -62,11 +63,23 @@ export async function PATCH(request: Request) {
       if (typeof body.published !== 'boolean' || typeof body.tips_enabled !== 'boolean') throw new ApiError('Invalid profile settings.');
       if (body.show_payer_addresses !== undefined && typeof body.show_payer_addresses !== 'boolean') throw new ApiError('Invalid privacy settings.');
       const db = appDb();
-      const { data: owner, error: ownerError } = await db.from('cards_users').select('id,username,avatar_url,banner_url,updated_at').eq('wallet_address', wallet).maybeSingle();
+      const { data: owner, error: ownerError } = await db.from('cards_users').select('id,username,avatar_url,banner_url,updated_at,design').eq('wallet_address', wallet).maybeSingle();
       if (ownerError) throw new ApiError('Profile storage is unavailable.', 503);
       if (!owner) throw new ApiError('Claim an alias before saving your creator card.', 409);
       if (owner.username !== design.alias) throw new ApiError('Use the alias purchased by your signed-in wallet.', 403);
       await assertRegistryOwnership(wallet, design.alias);
+      const requiresSignature = !!design.offers?.length || !!owner.design?.offers?.length;
+      const approvalPayload = { design, published: body.published, tips_enabled: body.tips_enabled,
+        ...(body.show_payer_addresses === undefined ? {} : { show_payer_addresses: body.show_payer_addresses }),
+        revision: owner.updated_at };
+      const origin = new URL(process.env.NEXT_PUBLIC_APP_URL ?? request.url).origin;
+      if (body.phase === 'challenge') {
+        return reply(requiresSignature ? { required: true, ...await issueChallenge(origin, wallet, 'save-card', approvalPayload) } : { required: false });
+      }
+      if (requiresSignature) {
+        if (typeof body.signature !== 'string' || typeof body.challenge !== 'string') throw new ApiError('Approve these offer changes with your wallet before saving.', 401, 'OFFER_SIGNATURE_REQUIRED');
+        await authorize(origin, { wallet, action: 'save-card', payload: approvalPayload, signature: body.signature, challenge: body.challenge });
+      }
       const uploaded: string[] = [];
       let saveAttempted = false;
       try {

@@ -1,3 +1,7 @@
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
+import { getCopy } from "@/i18n/server";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { SITE_MOTTO } from '@/lib/brand';
 
 import type { Metadata } from "next";
@@ -22,7 +26,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: { default: SITE_TITLE, template: '%s | VYNX' },
   description: SITE_DESCRIPTION,
@@ -36,13 +40,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getCopy();
+  const title = `VYNX – ${t(SITE_MOTTO)}`;
+  const description = t(SITE_DESCRIPTION);
+  return { ...baseMetadata, title: { default: title, template: '%s | VYNX' }, description,
+    openGraph: { ...baseMetadata.openGraph, title, description, locale: t.locale === 'es' ? 'es_ES' : 'en_US', alternateLocale: t.locale === 'es' ? ['en_US'] : ['es_ES'] },
+    twitter: { ...baseMetadata.twitter, title, description } };
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [locale, messages, t] = await Promise.all([getLocale(), getMessages(), getCopy()]);
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang={locale} className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <head>
         <meta name="theme-color" content="#0A0A0A" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -52,12 +66,14 @@ export default function RootLayout({
         <link rel="manifest" href="/site.webmanifest" />
       </head>
       <body className="min-h-full flex flex-col">
+        <NextIntlClientProvider locale={locale} messages={messages}>
         <PwaRegistration />
-        <a href="#main-content" className="skip-link">Skip to main content</a>
+        <a href="#main-content" className="skip-link">{t("Skip to main content")}</a>
         <Providers privyAppId={process.env.PRIVY_APP_ID?.trim()}>
           {children}
         </Providers>
-        <footer className="border-t border-white/10 bg-[#0A0A0A] px-6 py-6 text-zinc-300"><p className="mb-3 text-center text-sm">{SITE_MOTTO}</p><LegalLinks /></footer>
+        <footer className="border-t border-white/10 bg-[#0A0A0A] px-6 py-6 text-zinc-300"><p className="mb-3 text-center text-sm">{t(SITE_MOTTO)}</p><LegalLinks /><LanguageSwitcher /></footer>
+        </NextIntlClientProvider>
 
       </body>
     </html>

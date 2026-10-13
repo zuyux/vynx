@@ -34,7 +34,11 @@ function fixture() {
 }
 test('funding is atomic, quote-authorized and cannot charge twice',()=>{
  const f=fixture();f.fail(f.send(f.fund({quote:f.stranger.publicKey}),[f.payer,f.stranger]));assert.equal(f.balance(f.source),100000000n);
+ assert.equal(f.svm.getAccount(c.booking(f.id).toBase58()).exists,false);
+ assert.equal(f.svm.getAccount(c.vault(f.id).toBase58()).exists,false);
  f.ok(f.send(f.fund(),[f.payer,f.quote]));assert.equal(f.balance(f.source),99000000n);assert.equal(f.balance(c.vault(f.id)),1000000n);
+ const receipt=Buffer.from(f.svm.getAccount(c.booking(f.id).toBase58()).data);
+ assert(receipt.subarray(88,120).equals(f.creator.publicKey.toBuffer()));assert.equal(receipt[216],1);
  f.fail(f.send(f.fund(),[f.payer,f.quote]));assert.equal(f.balance(f.source),99000000n);
 });
 test('expiry, mint, amount and timing violations roll back account creation',()=>{

@@ -37,6 +37,6 @@ test('config prices retain exact lamports and validate discriminator, owner, siz
   d.writeBigUInt64LE(1n,136); assert.throws(() => decodeConfig(info(d))); assert.throws(() => decodeConfig(info(Buffer.alloc(185))));
 });
 test('client and program naming limits and reserved operational aliases agree', () => {
-  for (const alias of ['help','security','treasury','official','vynx','system','admin']) assert.throws(() => normalizeAlias(alias));
+  for (const alias of ['help','docs','brand','security','treasury','official','vynx','system','admin']) assert.throws(() => normalizeAlias(alias));
   assert.equal(normalizeAlias('@Z'), 'z'); assert.equal(normalizeAlias('a'.repeat(30)), 'a'.repeat(30)); assert.throws(() => normalizeAlias('a'.repeat(31)));
 });

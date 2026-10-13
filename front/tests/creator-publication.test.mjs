@@ -82,3 +82,13 @@ test('more details pages are optional for every offer and always require safe HT
     }
   }
 });
+
+test('TikTok survives publication and older social profiles remain compatible', () => {
+  const { tiktok, ...legacySocials } = design.socials;
+  assert.equal(readDraft(JSON.stringify({...design,socials:legacySocials})).socials.tiktok, '');
+  const result = publicationFields({...design,socials:{...design.socials,tiktok:'https://www.tiktok.com/@creator'}});
+  assert.equal(result.socials.tiktok, 'https://www.tiktok.com/@creator');
+  for (const tiktok of ['http://tiktok.com/@creator', 42, 'a'.repeat(501)]) {
+    assert.throws(() => publicationFields({...design,socials:{...design.socials,tiktok}}));
+  }
+});

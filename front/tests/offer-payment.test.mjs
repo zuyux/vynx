@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Keypair, Transaction } from '@solana/web3.js';
+import { ComputeBudgetProgram, Keypair, Transaction } from '@solana/web3.js';
 import { fixtureServer } from '../e2e/fixture-server.mjs';
 import { buildOfferPayment, verifyOfferPayment } from '../lib/offer-payment.ts';
 import { offerPriceUnits } from '../lib/offer-purchase.ts';
@@ -20,7 +20,10 @@ test('one-time payments verify the exact prepared offer, payer, creator, amount 
   try {
     const quote = await buildOfferPayment(purchase,payer.publicKey.toBase58(),creator);
     const prepared = {...purchase,transaction:quote.transaction,last_valid_block_height:quote.height,quoted_slot:quote.slot};
-    const transaction = Transaction.from(Buffer.from(quote.transaction,'base64')); transaction.partialSign(payer);
+    const transaction = Transaction.from(Buffer.from(quote.transaction,'base64'));
+    transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+    transaction.instructions.unshift(ComputeBudgetProgram.setComputeUnitLimit({units:200000}), ComputeBudgetProgram.setComputeUnitPrice({microLamports:1000}));
+    transaction.partialSign(payer);
     const submitted = await (await fetch(`${url}/test/submit`,{method:'POST',body:JSON.stringify({transaction:transaction.serialize().toString('base64')})})).json();
     await assert.doesNotReject(()=>verifyOfferPayment(prepared,payer.publicKey.toBase58(),creator,submitted.signature));
     for (const [changed,payingWallet,receivingWallet] of [

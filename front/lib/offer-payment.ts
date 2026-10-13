@@ -1,3 +1,4 @@
+import { matchesPreparedPayment } from './prepared-payment';
 import { PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js';
 import { createAssociatedTokenAccountIdempotentInstruction, createTransferCheckedInstruction, getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { aliasConnection } from './alias-network';
@@ -28,7 +29,7 @@ export async function verifyOfferPayment(purchase: MonthlyPaymentRecord, payer: 
   if (tx.meta.err) throw new ApiError('Payment failed. No purchase was recorded.', 400, 'PAYMENT_FAILED');
   const original = Transaction.from(Buffer.from(purchase.transaction, 'base64'));
   const raw = await connection.getTransaction(signature, { commitment: 'finalized', maxSupportedTransactionVersion: 0 });
-  if (!raw || !Buffer.from(raw.transaction.message.serialize()).equals(original.serializeMessage())) throw new ApiError('This transfer does not match the prepared offer payment.', 409, 'PAYMENT_MISMATCH');
+  if (!raw || !matchesPreparedPayment(original, raw)) throw new ApiError('This transfer does not match the prepared offer payment.', 409, 'PAYMENT_MISMATCH');
   try { verifyUsdcPayment(tx, payer, creator, Number(purchase.price_units), offerPurchaseMemo(purchase.id)); }
   catch { throw new ApiError('This transfer does not match the offer, price, creator, or paying wallet.', 409, 'PAYMENT_MISMATCH'); }
 }

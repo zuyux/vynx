@@ -4,8 +4,8 @@ export const SESSION_DURATIONS = [30, 60, 90, 120, 180] as const;
 export const OFFER_WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
 export type OfferSession = { id: string; weekday: number; time: string; endTime?: string };
 export type OfferTerms = { billingPeriod?: 'session' | 'month'; durationMinutes?: number; timezone?: string; schedule?: OfferSession[] };
-export function sessionDurationLabel(minutes: number) {
-  return minutes === 30 ? '30 min' : `${minutes / 60} ${minutes === 60 ? 'hour' : 'hours'}`;
+export function sessionDurationLabel(minutes: number, locale = 'en') {
+  return minutes === 30 ? '30 min' : new Intl.NumberFormat(locale, { style: 'unit', unit: 'hour', unitDisplay: 'long' }).format(minutes / 60);
 }
 export function sessionAvailabilityEnd(session: OfferSession, durationMinutes = 30) {
   if (session.endTime !== undefined) return session.endTime;
@@ -14,8 +14,8 @@ export function sessionAvailabilityEnd(session: OfferSession, durationMinutes = 
   if (end > 1440) return '';
   return `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`;
 }
-export function sessionAvailabilityLabel(session: OfferSession, durationMinutes = 30) {
-  return `${OFFER_WEEKDAYS[session.weekday]} ${session.time}–${sessionAvailabilityEnd(session, durationMinutes)}`;
+export function sessionAvailabilityLabel(session: OfferSession, durationMinutes = 30, locale = 'en') {
+  return `${new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, 0, 4 + session.weekday)))} ${session.time}–${sessionAvailabilityEnd(session, durationMinutes)}`;
 }
 export function readOfferTerms(value: OfferTerms): OfferTerms {
   const invalid = () => { throw new UserFacingError('Check the offer billing period, session duration, time zone, and weekly schedule.'); };

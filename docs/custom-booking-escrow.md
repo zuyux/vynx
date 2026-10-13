@@ -79,3 +79,11 @@ Actual finalized transactions: [funding](https://explorer.solana.com/tx/Au6VSvJq
 The wallet spent 4,790,200 lamports (0.0047902 devnet SOL), including account deposits and network fees, and ended with 1.9952098 devnet SOL. Public evidence is in [booking-devnet-funding-smoke.json](../chain/booking-devnet-funding-smoke.json). Run `npm run test:booking:devnet` from `chain` to reverify the existing settled receipt without submitting another payment. The script preserves its operation/signatures across retries and attempts a refund if a post-funding check fails.
 
 This test exercises the live escrow program directly; it does not claim a browser-to-live-database booking journey, real attendance-based settlement, or an independent audit. Production remains disabled.
+
+## Booking creation and escrow — October 12, 2026
+
+Creator services and availability are saved in the database through `/dashboard/bookings`. A creator can accept bookings by adding availability, selecting **Accept service bookings**, and saving the service. There is no separate on-chain creator registration or creator registration transaction.
+
+When a fan selects a slot, the API reserves it temporarily in the database. The fan then signs and broadcasts the escrow funding transaction, co-signed by the server quote authority. The program's `fund` instruction atomically creates the permanent booking receipt and escrow vault and transfers the payment into escrow. The API confirms the booking after verifying the finalized transaction and receipt. Duplicate funding cannot create or charge the same booking again.
+
+The original `404` with “This creator is not accepting bookings” indicates a missing or paused database offer. Saving an accepting service with valid availability makes its slots discoverable. This flow uses the existing deployed booking program and needs no program upgrade or database migration.

@@ -8,7 +8,7 @@ test('a saved alias cannot bypass choosing, connecting and authenticating a wall
   let lookups = 0, confirmations = 0;
   await page.route('**/api/auth/session', async route => {
     if (route.request().method() === 'POST') confirmations++;
-    await route.fulfill({ json: { wallet: account.publicKey.toBase58(), alias: 'saved_creator' } });
+    await route.fulfill({ json: { wallet: confirmations ? account.publicKey.toBase58() : null, alias: 'saved_creator' } });
   });
   await page.route('**/api/auth/nonce', route => route.fulfill({ json: { id: 'nonce', message: 'Sign in to Vynx' } }));
   await page.route('**/api/profile?*', route => {
@@ -34,15 +34,13 @@ test('a saved alias cannot bypass choosing, connecting and authenticating a wall
     await expect(page.getByRole('alert').filter({ hasText: 'cancelled' })).toBeVisible();
     await expect(page).toHaveURL('/'); expect(lookups).toBe(0); expect(confirmations).toBe(0);
     await connectWallet(page);
-    await expect(page).toHaveURL('/saved_creator');
+    await expect(page).toHaveURL('/dashboard/card');
     expect(confirmations).toBe(1);
     expect(await page.evaluate(() => (window as unknown as { walletTestCalls: { connect: number; message: number } }).walletTestCalls)).toMatchObject({ connect: 2, message: 2 });
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'Connect wallet', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Profile', exact: true })).toBeVisible();
     await expect(page).toHaveURL('/');
-    await connectWallet(page);
-    await expect(page).toHaveURL('/saved_creator');
-    expect(confirmations).toBe(2);
+    expect(confirmations).toBe(1);
   } finally { await context.close(); }
 });
 
@@ -59,20 +57,25 @@ test('Brave sign-in uses Brave directly and never falls back to Phantom', async 
     } });
   });
   const page = await context.newPage();
+  let authenticated = false;
   await page.route('**/api/auth/nonce', route => route.fulfill({ json: { id: 'nonce', message: 'Sign in to Vynx' } }));
-  await page.route('**/api/auth/session', route => route.fulfill({ json: { wallet: account.publicKey.toBase58(), alias: 'existing_creator' } }));
+  await page.route('**/api/auth/session', route => {
+    if (route.request().method() === 'POST') authenticated = true;
+    return route.fulfill({ json: { wallet: authenticated ? account.publicKey.toBase58() : null, alias: 'existing_creator' } });
+  });
   await page.route('**/api/profile?*', route => route.fulfill({ json: { profile: null } }));
   try {
     await page.goto('/');
     await page.getByRole('button', { name: 'Connect wallet', exact: true }).click();
     await page.getByRole('button', { name: 'Brave Wallet', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Disconnect wallet', exact: true })).toBeVisible();
+    await expect(page).toHaveURL('/dashboard/card');
     expect(await page.evaluate(() => (window as unknown as { braveConnections: number }).braveConnections)).toBe(1);
-    await page.getByRole('button', { name: 'Disconnect wallet', exact: true }).click();
+    authenticated = false;
+    await page.goto('/');
     await page.getByRole('button', { name: 'Connect wallet', exact: true }).click();
     await page.getByRole('button', { name: 'Phantom', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Disconnect wallet', exact: true })).toBeVisible();
-    expect(await page.evaluate(() => (window as unknown as { braveConnections: number }).braveConnections)).toBe(1);
+    await expect(page).toHaveURL('/dashboard/card');
+    expect(await page.evaluate(() => (window as unknown as { braveConnections: number }).braveConnections)).toBe(0);
   } finally { await context.close(); }
 });
 
@@ -85,8 +88,12 @@ for (const method of ['Phantom', 'Brave Wallet'] as const) {
       source.braveSolana = source.phantom.solana;
     });
     const page = await context.newPage();
+    let authenticated = false;
     await page.route('**/api/auth/nonce', route => route.fulfill({ json: { id: 'nonce', message: 'Sign in to Vynx' } }));
-    await page.route('**/api/auth/session', route => route.fulfill({ json: { wallet: account.publicKey.toBase58(), alias: null } }));
+    await page.route('**/api/auth/session', route => {
+      if (route.request().method() === 'POST') authenticated = true;
+      return route.fulfill({ json: { wallet: authenticated ? account.publicKey.toBase58() : null, alias: null } });
+    });
     await page.route('**/api/profile?*', route => route.fulfill({ json: { profile: null } }));
     try {
       await page.goto('/');

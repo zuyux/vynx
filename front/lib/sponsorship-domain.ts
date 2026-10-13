@@ -10,7 +10,7 @@ export type SponsorRequest = {
   status: 'pending' | 'approved' | 'rejected' | 'active';
   payment_signature: string | null; starts_at: string | null; ends_at: string | null; created_at: string;
 };
-export type SponsorAction = 'save-profile' | 'save-design' | 'request' | 'list' | 'approve' | 'reject' | 'checkout' | 'confirm';
+export type SponsorAction = 'save-profile' | 'save-design' | 'save-card' | 'request' | 'list' | 'approve' | 'reject' | 'checkout' | 'confirm';
 export type SponsorPayload = Record<string, unknown>;
 
 export function text(value: unknown, max: number, required = true): string {

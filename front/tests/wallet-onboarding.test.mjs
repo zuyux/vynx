@@ -13,7 +13,7 @@ test('Wallet onboarding requires a matching verified session and an explicitly m
   try {
     assert.equal(await walletOnboardingDestination('current-wallet'), '/profile/buy-alias?welcome=1&next=%2Fdashboard%2Fcard');
     body.alias = 'existing_creator';
-    assert.equal(await walletOnboardingDestination('current-wallet'), null);
+    assert.equal(await walletOnboardingDestination('current-wallet'), '/dashboard/card');
     body = { wallet: 'other-wallet', alias: null };
     await assert.rejects(walletOnboardingDestination('current-wallet'), /sign-in changed/);
     body = { wallet: 'current-wallet' };

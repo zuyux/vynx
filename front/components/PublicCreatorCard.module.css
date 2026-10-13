@@ -47,3 +47,15 @@
 .card[data-light='true'] button > span, .details[data-light='true'] a > svg:last-child { color: #52525b; }
 
 .details[data-light='true'] :is(a, button) span { color: #18181b; }
+
+.offerModal {
+  background: color-mix(in srgb, var(--offer-accent) 5%, var(--offer-surface));
+  color: var(--offer-text);
+  border-color: color-mix(in srgb, var(--card-accent-ink) 35%, var(--offer-surface));
+}
+.offerModal a { color: var(--card-accent-ink); }
+.offerModal input { accent-color: var(--card-accent-ink); }
+.offerModal :is(button, input, a):focus-visible {
+  outline: 2px solid var(--card-accent-ink);
+  outline-offset: 3px;
+}

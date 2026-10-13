@@ -5,7 +5,7 @@ import { logServerRequest } from '@/lib/server-log';
 import { attendance, verifiedCompletion, assertPrivateRoom, boundedJSON, callWindow, dailyRequest, roomProperties, tokenProperties, type VideoRoom } from '@/lib/daily-video';
 
 const reply = (body: unknown) => Response.json(body, { headers: { 'Cache-Control': 'no-store' } });
-const columns = 'id,creator_wallet,payer_wallet,starts_at,ends_at,state,payment_signature,monthly_invoice_id,terms';
+const columns = 'id,creator_wallet,payer_wallet,starts_at,ends_at,state,payment_signature,monthly_invoice_id,terms,price_units,expires_at';
 async function participant(id: unknown, wallet: string) {
   if (typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) throw new ApiError("Invalid booking.");
   const { data, error } = await appDb().from('call_bookings').select(columns).eq('id', id).maybeSingle();
@@ -14,19 +14,23 @@ async function participant(id: unknown, wallet: string) {
   if (!data.payment_signature && (!data.monthly_invoice_id || !['confirmed', 'completed', 'cancelled', 'no_show', 'disputed'].includes(data.state))) throw new ApiError("Confirm the booking payment first.", 409);
   return data;
 }
-function summary(b: { id: string; starts_at: string; ends_at: string; creator_wallet: string; terms: Record<string, unknown>; state: string; monthly_invoice_id?: string | null }, wallet: string) {
-  return { id: b.id, billing_period: b.monthly_invoice_id ? 'month' : 'session', state: b.state, starts_at: b.starts_at, ends_at: b.ends_at, title: b.terms.title, role: wallet === b.creator_wallet ? 'creator' : 'fan', call_path: `/calls/${b.id}` };
+function summary(b: { id: string; starts_at: string; ends_at: string; creator_wallet: string; terms: Record<string, unknown>; state: string; monthly_invoice_id?: string | null; payer_wallet?: string; payment_signature?: string | null; price_units?: number; expires_at?: string }, wallet: string) {
+  return { id: b.id, billing_period: b.monthly_invoice_id ? 'month' : 'session', state: b.state, starts_at: b.starts_at, ends_at: b.ends_at, title: b.terms.title, description: b.terms.description, price_units: b.price_units, currency: b.terms.currency ?? 'USDC', expires_at: b.expires_at, participant_wallet: wallet === b.creator_wallet ? b.payer_wallet : b.creator_wallet, payment_status: b.payment_signature || (b.monthly_invoice_id && b.state !== 'awaiting_payment' && b.state !== 'expired') ? 'paid' : 'awaiting_payment', role: wallet === b.creator_wallet ? 'creator' : 'fan', call_path: `/calls/${b.id}` };
 }
 export async function GET(request: Request) {
   return logServerRequest(request, '/api/calls', async () => {
     try {
-      const wallet = await requireWallet(request), id = new URL(request.url).searchParams.get('id');
+      const wallet = await requireWallet(request), query = new URL(request.url).searchParams, id = query.get('id');
       if (!id) {
         // Wallet is validated by the signed session; never interpolate arbitrary query input.
-        const { data, error } = await appDb().from('call_bookings').select(columns).in('state', ['confirmed', 'completed', 'cancelled', 'no_show', 'disputed'])
-          .or(`creator_wallet.eq.${wallet},payer_wallet.eq.${wallet}`).order('starts_at', { ascending: false }).limit(100);
+        const current = query.get('view') === 'current';
+        let bookings = appDb().from('call_bookings').select(columns)
+          .in('state', current ? ['awaiting_payment', 'confirmed', 'disputed'] : ['confirmed', 'completed', 'cancelled', 'no_show', 'disputed'])
+          .or(`creator_wallet.eq.${wallet},payer_wallet.eq.${wallet}`);
+        if (current) bookings = bookings.gt('ends_at', new Date().toISOString());
+        const { data, error } = await bookings.order('starts_at', { ascending: current }).limit(100);
         if (error) throw new ApiError("Could not load your calls.", 503);
-        return reply({ calls: (data ?? []).map(b => summary(b, wallet)) });
+        return reply({ calls: (data ?? []).filter(b => !current || b.state !== 'awaiting_payment' || Date.parse(b.expires_at) > Date.now()).map(b => summary(b, wallet)) });
       }
       const booking = await participant(id, wallet);
       const db = appDb();

@@ -46,6 +46,13 @@ test('call API enforces participants, funded booking and time; retries recover o
   assert.equal((await POST(request({id},false))).status,401);assert.equal((await POST(request({id},true,'https://evil.test'))).status,403);
   wallet='outsider';assert.equal((await POST(request({id}))).status,404);assert.equal(tokenCalls,0);
   wallet='fan';booking.state='awaiting_payment';assert.equal((await POST(request({id}))).status,409);booking.state='confirmed';
+  booking.price_units=25000000;booking.expires_at=new Date(Date.now()+600000).toISOString();
+  const listRequest=()=>new Request(`${origin}/api/calls?view=current`,{headers:{cookie:`vynx-session=${'a'.repeat(64)}`}});
+  booking.state='awaiting_payment';booking.payment_signature=null;
+  let listed=await (await GET(listRequest())).json();assert.equal(listed.calls.length,1);assert.equal(listed.calls[0].payment_status,'awaiting_payment');assert.equal(listed.calls[0].participant_wallet,'creator');assert.equal(listed.calls[0].price_units,25000000);
+  booking.expires_at=new Date(Date.now()-1000).toISOString();listed=await (await GET(listRequest())).json();assert.equal(listed.calls.length,0);
+  booking.state='confirmed';booking.payment_signature='verified';wallet='creator';
+  listed=await (await GET(listRequest())).json();assert.equal(listed.calls[0].payment_status,'paid');assert.equal(listed.calls[0].participant_wallet,'fan');wallet='fan';
   const originalStart=booking.starts_at;booking.starts_at=new Date(Date.now()+3600000).toISOString();assert.equal((await POST(request({id}))).status,409);booking.starts_at=originalStart;
   const first=await POST(request({id}));assert.equal(first.status,200);assert.equal(first.headers.get('cache-control'),'no-store');assert.equal((await first.json()).token,'PRIVATE-TOKEN');
   wallet='creator';assert.equal((await POST(request({id}))).status,200);assert.equal(tokenCalls,2);assert.ok(allocated);

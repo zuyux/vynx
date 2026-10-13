@@ -33,6 +33,8 @@ const RESERVED = new Set([
   "sitemap",
   "_next",
   "help",
+  "docs",
+  "brand",
   "security",
   "treasury",
   "official",

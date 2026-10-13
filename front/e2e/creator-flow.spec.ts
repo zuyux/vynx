@@ -35,7 +35,7 @@ test('creator claims, publishes, reloads, receives a verified tip and logs out',
   await creatorPage.getByRole('button', { name: 'Connect wallet', exact: true }).click();
   await creatorPage.getByRole('button', { name: 'Phantom', exact: true }).click();
   await expect(creatorPage.getByRole('status').filter({ hasText: 'Your card is unpublished' })).toBeVisible();
-  await expect(creatorPage.getByRole('link', { name: 'Edit my creator card', exact: true })).toBeVisible();
+  await expect(creatorPage.getByRole('link', { name: 'Edit my creator card', exact: true })).toHaveCount(0);
   expect(await creatorPage.evaluate(() => (window as unknown as { walletTestCalls: { transaction: number } }).walletTestCalls.transaction)).toBe(transactionsBeforeSignIn);
 
   await creatorPage.goto('/');
@@ -48,7 +48,7 @@ test('creator claims, publishes, reloads, receives a verified tip and logs out',
   expect([200, 404]).toContain((await anonymousPage.goto(`/${alias}`))?.status());
   await expect(anonymousPage.getByRole('heading', { name: 'Card unavailable' })).toBeVisible();
   await anonymousPage.close();
-  await creatorPage.getByRole('link', { name: 'Edit my creator card', exact: true }).click();
+  await creatorPage.goto('/dashboard/card');
   await expect(creatorPage).toHaveURL('/dashboard/card');
 
   for (const width of [320, 375, 430]) {
@@ -85,8 +85,8 @@ test('creator claims, publishes, reloads, receives a verified tip and logs out',
   await creatorPage.getByRole('button', { name: 'Connect wallet', exact: true }).click();
   await creatorPage.getByRole('button', { name: 'Phantom', exact: true }).click();
   await expect(creatorPage).toHaveURL(`/${alias}`);
-  await expect(creatorPage.getByRole('link', { name: 'Edit my creator card', exact: true })).toBeVisible();
-  await creatorPage.getByRole('link', { name: 'Edit my creator card', exact: true }).click();
+  await expect(creatorPage.getByRole('link', { name: 'Edit my creator card', exact: true })).toHaveCount(0);
+  await creatorPage.goto('/dashboard/card');
   await expect(creatorPage).toHaveURL('/dashboard/card');
   await creatorPage.goto('/profile/buy-alias');
   await creatorPage.getByRole('button', { name: 'Connect wallet', exact: true }).click();

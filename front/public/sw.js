@@ -1,6 +1,7 @@
-const STATIC_CACHE = 'vynx-pwa-v1';
+const STATIC_CACHE = 'vynx-pwa-v2';
 const OFFLINE_URL = '/offline.html';
-const PUBLIC_ASSETS = [OFFLINE_URL, '/android-chrome-192x192.png', '/android-chrome-512x512.png', '/android-chrome-maskable-512x512.png', '/apple-touch-icon.png'];
+const SPANISH_OFFLINE_URL = '/offline-es.html';
+const PUBLIC_ASSETS = [OFFLINE_URL, SPANISH_OFFLINE_URL, '/android-chrome-192x192.png', '/android-chrome-512x512.png', '/android-chrome-maskable-512x512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
@@ -27,7 +28,7 @@ self.addEventListener('fetch', event => {
   // Never store live pages, account responses, payment requests, or call tokens.
   if (event.request.mode === 'navigate') {
     event.respondWith(fetch(event.request).catch(async () =>
-      (await caches.open(STATIC_CACHE)).match(OFFLINE_URL),
+      (await caches.open(STATIC_CACHE)).match(/^\/es(?:\/|$)/.test(url.pathname) ? SPANISH_OFFLINE_URL : OFFLINE_URL),
     ));
     return;
   }

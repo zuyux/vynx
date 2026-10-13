@@ -1,12 +1,15 @@
 'use client';
+import { useCopy } from "@/i18n/copy";
+
 import { userErrorMessage } from '@/lib/user-facing-error';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { BrandLogo } from '@/components/BrandLogo';
 import { useWalletSession } from '@/components/WalletSessionProvider';
 
 export function WalletAuthGate({ title = 'Unlock your dashboard', description = 'Sign in with email, Google, or your Solana wallet to continue.', reloadAfterSignIn = false }: { title?: string; description?: string; reloadAfterSignIn?: boolean }) {
+  const t = useCopy();
   const session = useWalletSession();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -19,8 +22,8 @@ export function WalletAuthGate({ title = 'Unlock your dashboard', description = 
       if (reloadAfterSignIn) window.location.reload();
       else router.refresh();
     }
-    catch (reason) { setError(userErrorMessage(reason, 'Unable to sign in. Retry.')); }
+    catch (reason) { setError(userErrorMessage(reason, t('Unable to sign in. Retry.'))); }
     finally { setBusy(false); }
   }
-  return <main id="main-content" tabIndex={-1} className="flex min-h-screen items-center justify-center bg-[#07070a] p-6 text-white"><section className="w-full max-w-md rounded-3xl border border-white/10 bg-[#101015] p-8"><BrandLogo /><h1 className="mt-6 text-2xl font-semibold">{title}</h1><p className="mt-3 text-sm leading-6 text-zinc-400">{description}</p><button type="button" disabled={busy || session.checking} onClick={() => void signIn()} className="mt-6 w-full rounded-xl bg-[#00F5A0] px-5 py-3 font-semibold text-black disabled:opacity-40">{busy ? 'Signing in…' : 'Connect wallet'}</button>{error && <p role="alert" className="mt-4 text-sm text-red-200">{error}</p>}</section></main>;
+  return <main id="main-content" tabIndex={-1} className="flex min-h-screen items-center justify-center bg-[#07070a] p-6 text-white"><section className="w-full max-w-md rounded-3xl border border-white/10 bg-[#101015] p-8"><BrandLogo /><h1 className="mt-6 text-2xl font-semibold">{t(title)}</h1><p className="mt-3 text-sm leading-6 text-zinc-400">{t(description)}</p><button type="button" disabled={busy || session.checking} onClick={() => void signIn()} className="mt-6 w-full rounded-xl bg-[#00F5A0] px-5 py-3 font-semibold text-black disabled:opacity-40">{busy ? t('Signing in…') : t('Connect wallet')}</button>{error && <p role="alert" className="mt-4 text-sm text-red-200">{t(error)}</p>}</section></main>;
 }

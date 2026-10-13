@@ -7,6 +7,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
 
 @font-face {
   font-family: 'Nofex';
@@ -135,11 +137,27 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
+  body {
+    width: 100%;
+    min-width: 0;
+    /* Constrain the shared page shell, including provider portals and footers. */
+    overflow-x: clip;
+    /* Stop touchpad gestures from moving the viewport past its horizontal edge. */
+    overscroll-behavior-x: none;
+  }
   body {
     @apply bg-background text-foreground;
   }
   html {
     @apply font-sans;
+    /* The viewport needs a scroll container for overscroll-behavior to apply. */
+    overflow-x: hidden;
+  }
+  main {
+    min-width: 0;
+    /* Long URLs and user content must not enlarge flex or grid tracks. */
+    overflow-wrap: anywhere;
   }
   h1, h2, h3, h4, h5, h6 {
     font-weight: 700;
@@ -221,6 +239,14 @@ body:has(.preview-resize-handle[data-resizing='true']) {
   outline-offset: 3px;
   box-shadow: 0 0 0 3px white;
 }
+.alias-claim-modal:focus,
+.alias-claim-modal:focus-visible,
+.alias-claim-modal :is(input, button):focus,
+.alias-claim-modal :is(input, button):focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 .landing-page #alias:focus-visible {
   outline: none;
   box-shadow: none;

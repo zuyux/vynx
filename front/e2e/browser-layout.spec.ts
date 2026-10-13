@@ -1,5 +1,25 @@
 import { test, expect } from './test';
 
+test('landing page stays horizontally fixed during diagonal touchpad scrolling', async ({ page }) => {
+  await page.setViewportSize({ width: 1864, height: 1007 });
+  await page.goto('/');
+  const main = page.getByRole('main');
+  await expect(main).toHaveCSS('overflow-x', 'clip');
+  await expect(page.locator('html')).toHaveCSS('overflow-x', 'hidden');
+  await expect(page.locator('html')).toHaveCSS('overscroll-behavior-x', 'none');
+  await expect(page.locator('body')).toHaveCSS('overscroll-behavior-x', 'none');
+  await page.mouse.move(900, 600);
+  for (const deltaX of [800, -800]) {
+    await page.mouse.wheel(deltaX, 600);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+    await expect.poll(() => page.evaluate(() => ({
+      viewport: window.scrollX,
+      content: document.querySelector('main')!.scrollLeft,
+      left: document.querySelector('main')!.getBoundingClientRect().left,
+    }))).toEqual({ viewport: 0, content: 0, left: 0 });
+  }
+});
+
 // Engine-independent public surfaces: exercise narrow phones, tablets and desktop.
 test('public pages and disclosures fit mobile viewports and remain navigable', async ({ page, browser }, testInfo) => {
   console.log(`${testInfo.project.name}: ${browser.version()}`);
@@ -13,6 +33,12 @@ test('public pages and disclosures fit mobile viewports and remain navigable', a
     for (const width of [320, 375, 430, 768, 1280]) {
       await page.setViewportSize({ width, height: 844 });
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), { message: `${path} overflows at ${width}px` }).toBe(true);
+      await expect(page.locator('body')).toHaveCSS('overflow-x', 'clip');
+      await expect(page.locator('html')).toHaveCSS('overflow-x', 'hidden');
+      await expect.poll(() => page.evaluate(() => {
+        const body = document.body.getBoundingClientRect();
+        return body.left === 0 && body.right <= document.documentElement.clientWidth;
+      }), { message: `${path}: shared page shell exceeds the viewport at ${width}px` }).toBe(true);
       const links = page.getByRole('navigation', { name: 'Legal and support' }).getByRole('link');
       await expect(links).toHaveCount(5);
       for (const link of await links.all()) {

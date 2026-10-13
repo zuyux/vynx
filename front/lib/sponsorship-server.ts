@@ -26,7 +26,12 @@ export function walletKey(value: unknown) {
 export function challengeMessage(origin: string, wallet: string, action: SponsorAction, payload: SponsorPayload, id: string, expires: string) {
   const digest = createHash('sha256').update(JSON.stringify(payload)).digest('hex');
   // The hash still covers every byte, including images. Keep the wallet prompt small.
-  const display = action === 'save-design' ? JSON.stringify({
+  const display = action === 'save-card' ? JSON.stringify({
+    alias: (payload.design as Record<string, unknown>).alias,
+    offers: (payload.design as Record<string, unknown>).offers,
+    published: payload.published,
+    operation: 'Save creator offers and page settings',
+  }) : action === 'save-design' ? JSON.stringify({
     alias: payload.alias, name: payload.name, bio: payload.bio, accent: payload.accent,
     theme: payload.theme, rounded: payload.rounded, links: payload.links, socials: payload.socials,
     avatar: payload.avatar ? "Image included in the hash" : "No image",

@@ -23,6 +23,19 @@ export function browserWallet(method: BrowserAuthMethod, source: WalletWindow = 
 }
 export const browserWalletAddress = (provider: BrowserSolanaProvider) => provider.isConnected === false ? '' : provider.publicKey?.toBase58() ?? '';
 
+// A cookie alone cannot authorize signing. Restore only one live provider
+// whose current account matches the wallet verified by the server.
+export function restoreBrowserWallet(wallet: string, source: WalletWindow = window as WalletWindow) {
+  if (!wallet) return null;
+  const matches = (['phantom', 'brave'] as const).flatMap(method => {
+    try {
+      const provider = browserWallet(method, source);
+      return provider.isConnected === true && browserWalletAddress(provider) === wallet ? [{ method, provider, address: wallet }] : [];
+    } catch { return []; }
+  });
+  return matches.length === 1 ? matches[0] : null;
+}
+
 export async function authenticateBrowserWallet(provider: BrowserSolanaProvider, signal?: AbortSignal) {
   // Always connect, even when a public key or old application cookie exists.
   const connected = await provider.connect();

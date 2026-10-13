@@ -53,6 +53,8 @@ test('booking API binds session, reuses checkout and verifies finalized transact
   assert.equal((await POST(request({action:'reserve'},{origin:'https://attacker.example'}))).status,403);
   assert.equal((await POST(request({action:'reserve'},{cookie:''}))).status,401);
   assert.equal((await POST(request({action:'reserve',alias:'alice',slot:starts}))).status,400);
+  offer.accepting=false;assert.equal((await GET(new Request(`${origin}/api/bookings?alias=alice`))).status,404);
+  offer.accepting=true;assert.equal((await GET(new Request(`${origin}/api/bookings?alias=alice`))).status,200);
   assert.equal((await POST(request({action:'reserve',alias:'alice',slot:starts,accepted_policy:'vynx-escrow-devnet-v1'}))).status,200);
   const first=await(await POST(request({action:'checkout',id}))).json(),second=await(await POST(request({action:'checkout',id}))).json();
   assert.equal(first.transaction,second.transaction);assert.equal(first.booking.payer_wallet,undefined);

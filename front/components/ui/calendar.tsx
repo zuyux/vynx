@@ -1,5 +1,7 @@
 "use client"
 
+import { useLocale } from "next-intl"
+import { es, enUS } from "react-day-picker/locale"
 import * as React from "react"
 import { cn } from "cn"
 import {
@@ -27,10 +29,12 @@ function Calendar({
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
 }) {
+  const locale = useLocale()
   const defaultClassNames = getDefaultClassNames()
 
   return (
     <DayPicker
+      locale={locale === "es" ? es : enUS}
       showOutsideDays={showOutsideDays}
       className={cn(
         "group/calendar bg-background p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
@@ -41,7 +45,7 @@ function Calendar({
       captionLayout={captionLayout}
       formatters={{
         formatMonthDropdown: (date) =>
-          date.toLocaleString("default", { month: "short" }),
+          date.toLocaleString(locale, { month: "short" }),
         ...formatters,
       }}
       classNames={{

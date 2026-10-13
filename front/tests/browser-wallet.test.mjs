@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { authenticateBrowserWallet, browserWallet } from '../lib/browser-wallet.ts';
+import { authenticateBrowserWallet, browserWallet, restoreBrowserWallet } from '../lib/browser-wallet.ts';
 
 const key = address => ({ toBase58: () => address });
 test('Phantom and Brave choices resolve their exact providers without falling back to window.solana', () => {
@@ -39,4 +39,21 @@ test('cached public keys still require connect and a freshly verified sign-in be
     await assert.rejects(authenticateBrowserWallet(provider, controller.signal));
     assert.deepEqual(calls, ['connect']);
   } finally { globalThis.fetch = oldFetch; }
+});
+
+test('restoring signing access requires one live provider matching the verified session', () => {
+  const phantom = { publicKey: key('payer'), isConnected: true };
+  const brave = { publicKey: key('other'), isConnected: true };
+  const source = { phantom: { solana: phantom }, braveSolana: brave };
+  assert.deepEqual(restoreBrowserWallet('payer', source), { method: 'phantom', provider: phantom, address: 'payer' });
+  assert.deepEqual(restoreBrowserWallet('other', source), { method: 'brave', provider: brave, address: 'other' });
+  assert.equal(restoreBrowserWallet('', source), null);
+  assert.equal(restoreBrowserWallet('unknown', source), null);
+  phantom.isConnected = false;
+  assert.equal(restoreBrowserWallet('payer', source), null);
+  delete phantom.isConnected;
+  assert.equal(restoreBrowserWallet('payer', source), null);
+  phantom.isConnected = true;
+  brave.publicKey = key('payer');
+  assert.equal(restoreBrowserWallet('payer', source), null);
 });

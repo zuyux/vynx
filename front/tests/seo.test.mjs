@@ -47,11 +47,13 @@ test('sitemap paginates published profiles, skips invalid aliases, and uses real
     const entries = await sitemap();
     assert.equal(requests.length, 2);
     assert.equal(requests[1].searchParams.get('offset'), '1000');
-    assert.equal(entries.length, 1006);
-    assert.deepEqual(entries.slice(1, 6).map(entry => entry.url), ['/help/terms', '/help/privacy', '/help/fees', '/help/network', '/support'].map(path => `https://vynx.example${path}`));
+    assert.equal(entries.length, 1008);
+    assert.deepEqual(entries.slice(1, 8).map(entry => entry.url), ['/docs', '/brand', '/help/terms', '/help/privacy', '/help/fees', '/help/network', '/support'].map(path => `https://vynx.example${path}`));
     assert.equal(entries[0].url, 'https://vynx.example/');
     assert.equal(entries.at(-1).url, 'https://vynx.example/last_creator');
     assert.equal(entries.at(-1).lastModified, '2026-10-02T00:00:00Z');
+    assert.equal(entries[0].alternates.languages.es, 'https://vynx.example/es');
+    assert.equal(entries.at(-1).alternates.languages.es, 'https://vynx.example/es/last_creator');
     assert.equal(robots().sitemap, 'https://vynx.example/sitemap.xml');
     assert.equal(robots().rules.disallow.includes('/dashboard/'), false); // Crawlers must read the noindex tag.
     globalThis.fetch = async () => new Response(JSON.stringify({ message: 'offline' }), { status: 503 });

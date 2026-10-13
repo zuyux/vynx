@@ -1,3 +1,4 @@
+import { matchesPreparedPayment } from './prepared-payment';
 import { PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js';
 import { createAssociatedTokenAccountIdempotentInstruction, createTransferCheckedInstruction, getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { aliasConnection } from './alias-network';
@@ -28,7 +29,7 @@ export async function verifyMonthlyPayment(invoice: MonthlyPaymentRecord, payer:
   if (tx.meta.err) throw new ApiError('The monthly payment failed. No month was activated.', 400, 'PAYMENT_FAILED');
   const original = Transaction.from(Buffer.from(invoice.transaction, 'base64'));
   const raw = await connection.getTransaction(signature, { commitment: 'finalized', maxSupportedTransactionVersion: 0 });
-  if (!raw || !Buffer.from(raw.transaction.message.serialize()).equals(original.serializeMessage())) throw new ApiError('This payment does not match the prepared monthly invoice.', 409, 'PAYMENT_MISMATCH');
+  if (!raw || !matchesPreparedPayment(original, raw)) throw new ApiError('This payment does not match the prepared monthly invoice.', 409, 'PAYMENT_MISMATCH');
   try { verifyUsdcPayment(tx, payer, creator, Number(invoice.price_units), monthlyMemo(invoice.id)); }
   catch { throw new ApiError('This payment does not match the invoice amount, creator, payer, or month.', 409, 'PAYMENT_MISMATCH'); }
 }
@@ -39,7 +40,7 @@ export async function recoverExpiredMonthlyPayment(invoice: MonthlyPaymentRecord
   const height = await connection.getBlockHeight('finalized');
   if (!invoice.transaction) return { signature: null, height };
   if (invoice.last_valid_block_height === null || invoice.quoted_slot === null || height <= Number(invoice.last_valid_block_height)) throw new ApiError('The original payment may still land. Wait or verify its signature.', 409, 'PAYMENT_PENDING');
-  const original = Transaction.from(Buffer.from(invoice.transaction, 'base64')).serializeMessage();
+  const original = Transaction.from(Buffer.from(invoice.transaction, 'base64'));
   let before: string | undefined;
   for (let page = 0; page < 10; page++) {
     const history = await connection.getSignaturesForAddress(new PublicKey(payer), { limit: 100, ...(before ? { before } : {}) }, 'finalized');
@@ -48,7 +49,7 @@ export async function recoverExpiredMonthlyPayment(invoice: MonthlyPaymentRecord
       if (item.err) continue;
       const tx = await connection.getTransaction(item.signature, { commitment: 'finalized', maxSupportedTransactionVersion: 0 });
       if (!tx) throw new ApiError('Payment history is incomplete. Verify the original wallet signature.', 503);
-      if (Buffer.from(tx.transaction.message.serialize()).equals(original)) return { signature: item.signature, height };
+      if (matchesPreparedPayment(original, tx)) return { signature: item.signature, height };
     }
     if (history.length < 100) return { signature: null, height };
     before = history.at(-1)!.signature;

@@ -7,6 +7,8 @@ export async function walletOnboardingDestination(wallet: string, signal?: Abort
   if (!response.ok) throw responseError(response, session, 'Unable to check your alias. Please retry.');
   if (session.wallet !== wallet) throw new UserFacingError('Your sign-in changed. Sign in with the current wallet again.');
   if (session.alias === null) return '/profile/buy-alias?welcome=1&next=%2Fdashboard%2Fcard';
-  if (typeof session.alias === 'string' && /^[a-z0-9_]{1,30}$/.test(session.alias)) return null;
+  if (typeof session.alias === 'string' && /^[a-z0-9_]{1,30}$/.test(session.alias)) {
+    return '/dashboard/card';
+  }
   throw new UserFacingError('Unable to check your alias. Please retry.');
 }

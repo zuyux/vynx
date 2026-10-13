@@ -1,5 +1,5 @@
 import { UserFacingError } from './user-facing-error';
-const RESERVED = new Set(['admin', 'api', 'auth', 'creators', 'dashboard', 'profile', 'support', 'settings', 'login', 'logout', 'favicon', 'robots', 'sitemap', '_next', 'help', 'security', 'treasury', 'official', 'vynx', 'system']);
+const RESERVED = new Set(['admin', 'en', 'es', 'api', 'auth', 'creators', 'dashboard', 'profile', 'support', 'settings', 'login', 'logout', 'favicon', 'robots', 'sitemap', '_next', 'help', 'docs', 'brand', 'security', 'treasury', 'official', 'vynx', 'system']);
 
 export function normalizeAlias(value: unknown) {
   if (typeof value !== 'string') throw new UserFacingError('Enter a valid alias.');

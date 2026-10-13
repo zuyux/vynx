@@ -208,7 +208,7 @@ Goal: deliver a real, shareable creator card backed by Supabase.
 - [x] **P1** Add copy-link and native share actions.
 - [x] **P1** Prevent dashboard, API, asset, and reserved route collisions if using a root-level username route.
 - [x] **P1** Add loading and empty states without exposing internal errors. Public creator loading/unavailable states, safe page error boundaries and sanitized client feedback are implemented; loading/error privacy tests pass in the 143-test frontend suite.
-- [ ] **P1** Verify accessibility: keyboard navigation, focus states, labels, color contrast, and reduced-motion behavior. October 12, 2026 recheck found zero axe violations on 12 route fixtures, but the suite stopped at a stale Spanish editor control locator (`Apariencia`); update the check and rerun the remaining keyboard, focus and reduced-motion assertions. See [verification coverage](front/docs/accessibility.md).
+- [ ] **P1** Verify accessibility: keyboard navigation, focus states, labels, color contrast, and reduced-motion behavior.
 
 Acceptance criteria:
 
