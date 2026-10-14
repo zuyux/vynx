@@ -3,7 +3,7 @@ import { userErrorMessage } from './user-facing-error';
 
 export type ClaimStage = 'sign-in' | 'prepare' | 'send' | 'verify';
 
-export function claimErrorMessage(reason: unknown, stage: ClaimStage, paymentSent: boolean, priceSol: string | number = CLAIM_PRICE_SOL, sponsored = false) {
+export function claimErrorMessage(reason: unknown, stage: ClaimStage, paymentSent: boolean, priceSol: string | number = CLAIM_PRICE_SOL, sponsored = false, fullySponsored = false) {
   const error = reason && typeof reason === 'object' ? reason as { code?: unknown; message?: unknown } : {};
   const code = error.code;
   const message = typeof error.message === 'string' ? error.message : typeof reason === 'string' ? reason : '';
@@ -29,6 +29,7 @@ export function claimErrorMessage(reason: unknown, stage: ClaimStage, paymentSen
     : 'The payment signature could not be verified. Reconnect the correct wallet and try again.';
   if (paymentSent) return `Your payment was sent, but verification did not finish. ${receipt}`;
   if (code === 'INSUFFICIENT_FUNDS' || /insufficient (funds|balance|lamports)|not enough (sol|funds)|attempt to debit an account but found no record of a prior credit/i.test(message)) {
+    if (fullySponsored) return guidance.SPONSOR_UNAVAILABLE;
     return `Add devnet SOL to your connected wallet to cover ${priceSol} SOL${sponsored ? '. VYNX pays network fees' : ' plus network fees'}, then try again.`;
   }
   if (code === 'USER_CANCELLED' || /cancelled|canceled|popup closed|window closed/i.test(message)) return 'Wallet approval was cancelled. Try again when you are ready to approve it in Phantom.';

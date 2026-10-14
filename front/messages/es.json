@@ -570,7 +570,6 @@
     "m592": "No se pudo completar la reserva. Conserve la firma y vuelva a intentar la verificación.",
     "m593": "reservar una llamada",
     "m594": "mín ·",
-    "m595": "Solana devnet · tokens de prueba · depósito en garantía personalizado no auditado. Su billetera paga los depósitos de la cuenta y las tarifas de la red.",
     "m596": "Los fondos se retienen hasta la resolución. Reembolso completo si el creador cancela o cancelas con al menos 24 horas de anticipación. Puedes disputar hasta 24 horas después de la llamada. Un solucionador Vynx decide la división; después de 30 días sin resolución podrás recuperar el principal.",
     "m597": "Franja horaria (",
     "m598": "Seleccione una franja horaria",
@@ -1577,6 +1576,12 @@
     "m1632": "Fin",
     "m1633": "Enlace {v0}",
     "m1634": "Usa una URL completa que comience con https://.",
-    "m1635": "Dirección del remitente oculta"
+    "m1635": "Dirección del remitente oculta",
+    "m1636": "Preparando la reclamación de tu alias…",
+    "m1637": "Firma la reclamación del alias en tu billetera…",
+    "m1638": "Reclamación enviada. Verificando tu alias…",
+    "m1639": "Por ahora VYNX paga el registro, la renta de las cuentas y las comisiones de red. Firma con tu billetera o Privy para reclamar. No necesitas SOL.",
+    "m1640": "Reclamar alias gratis",
+    "m1641": "Por ahora VYNX cubre el registro de alias en cadena, la renta de las cuentas y las comisiones de red en Solana devnet. Reclama firmando con tu billetera conectada o Privy; no necesitas saldo en SOL. Las reclamaciones antiguas siguen mostrando su precio antes de aprobar."
   }
 }

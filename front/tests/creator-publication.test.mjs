@@ -92,3 +92,18 @@ test('TikTok survives publication and older social profiles remain compatible', 
     assert.throws(() => publicationFields({...design,socials:{...design.socials,tiktok}}));
   }
 });
+
+test('new social links survive saved-profile loading and reject malformed URLs', () => {
+  const socials = { ...design.socials, tiktok: 'https://www.tiktok.com/@creator', substack: 'https://creator.substack.com', telegram: 'https://t.me/creator' };
+  const published = publicationFields({ ...design, socials });
+  const loaded = draftFromProfile({ alias: design.alias, display_name: design.name, bio: design.bio, design: JSON.parse(JSON.stringify(published)) });
+  for (const network of ['tiktok', 'substack', 'telegram']) {
+    assert.equal(loaded.socials[network], new URL(socials[network]).href);
+    const legacy = { ...design.socials };
+    delete legacy[network];
+    assert.equal(readDraft(JSON.stringify({ ...design, socials: legacy })).socials[network], '');
+    for (const value of [42, 'a'.repeat(501), 'javascript:alert(1)', 'http://example.com', 'https://user:pass@example.com']) {
+      assert.throws(() => publicationFields({ ...design, socials: { ...socials, [network]: value } }));
+    }
+  }
+});

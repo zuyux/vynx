@@ -569,7 +569,6 @@
   "m592": "Could not complete the booking. Keep the signature and retry verification.",
   "m593": "Book a call",
   "m594": "min ·",
-  "m595": "Solana devnet · test tokens · custom unaudited escrow. Your wallet pays account deposits and network fees.",
   "m596": "Funds are held until resolution. Full refund if the creator cancels or you cancel at least 24 hours in advance. You can dispute up to 24 hours after the call. A Vynx resolver decides the split; after 30 days without resolution you can recover the principal.",
   "m597": "Time slot (",
   "m598": "Select a time slot",
@@ -1576,5 +1575,11 @@
   "m1632": "End",
   "m1633": "Link {v0}",
   "m1634": "Use a full URL starting with https://.",
-  "m1635": "Sender address hidden"
+  "m1635": "Sender address hidden",
+  "m1636": "Preparing your alias claim…",
+  "m1637": "Sign the alias claim in your wallet…",
+  "m1638": "Claim sent. Verifying your alias…",
+  "m1639": "VYNX currently pays registration, account rent and network fees. Sign with your wallet or Privy to claim. No SOL needed.",
+  "m1640": "Claim alias for free",
+  "m1641": "VYNX currently sponsors on-chain alias registration, account rent and network fees on Solana devnet. Claim by signing with your connected wallet or Privy; no SOL balance is needed. Legacy claims still display their payable price before approval."
 }

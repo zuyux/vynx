@@ -24,9 +24,7 @@ export function registryFixture({ sponsor, treasury }) {
     const value = svm.getAccount(address);
     return value.exists ? { data: [Buffer.from(value.data).toString('base64'), 'base64'], owner: value.programAddress, executable: !!value.executable, lamports: Number(value.lamports), rentEpoch: 0, space: value.data.length } : null;
   };
-  function fund(address) { if (!svm.getAccount(address).exists) svm.airdrop(address, 2_000_000_000n); }
   function submit(tx) {
-    for (const signature of tx.signatures) if (!signature.publicKey.equals(sponsor.publicKey)) fund(signature.publicKey.toBase58());
     const message = tx.compileMessage();
     const pre = message.accountKeys.map(key => Number(svm.getBalance(key.toBase58()) ?? 0n));
     const result = svm.sendTransaction(getTransactionDecoder().decode(tx.serialize()));
@@ -38,7 +36,7 @@ export function registryFixture({ sponsor, treasury }) {
     switch (method) {
       case 'getLatestBlockhash': return { context: { slot: slot() }, value: { blockhash: svm.latestBlockhash(), lastValidBlockHeight: slot() + 150 } };
       case 'getSlot': case 'getBlockHeight': return slot();
-      case 'getBalance': fund(params[0]); return { context: { slot: slot() }, value: Number(svm.getBalance(params[0])) };
+      case 'getBalance': return { context: { slot: slot() }, value: Number(svm.getBalance(params[0]) ?? 0n) };
       case 'getAccountInfo': return { context: { slot: slot() }, value: account(params[0]) };
       case 'getMultipleAccounts': return { context: { slot: slot() }, value: params[0].map(account) };
       case 'simulateTransaction': {

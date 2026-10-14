@@ -34,7 +34,10 @@ test('booking UI preserves uncertain sends, recovers by signature and fits mobil
   await page.getByRole('button', { name: "Connect wallet to book" }).click();
   await page.getByRole('button', { name: 'Phantom', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Book and pay into escrow' })).toBeVisible();
-  await page.getByLabel('Time slot (America/Lima)').selectOption(starts);
+  const dayKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(starts));
+  const calendarDate = new Date(`${dayKey}T12:00:00`);
+  await page.locator(`[data-slot=calendar] button[data-day="${calendarDate.toLocaleDateString('en-US')}"]`).click();
+  await page.getByLabel('Select a time slot', { exact: true }).selectOption(starts);
   await page.getByRole('checkbox').check();
   await page.evaluate(() => { (window as typeof window & { walletTestTransactionError: unknown }).walletTestTransactionError = { message: 'Wallet response lost' }; });
   await page.getByRole('button', { name: 'Book and pay into escrow' }).click();
@@ -43,13 +46,18 @@ test('booking UI preserves uncertain sends, recovers by signature and fits mobil
   await page.getByRole('button', { name: 'Continue / verify booking' }).click();
   await expect(page.getByRole('status')).toContainText('submission result is uncertain');
   expect(checkouts).toBe(1);
+  await page.evaluate(({ wallet, alias }) => {
+    const key = `vynx:booking:v1:${wallet}:${alias}`;
+    const saved = JSON.parse(localStorage.getItem(key)!);
+    localStorage.setItem(key, JSON.stringify({ ...saved, signature: '1'.repeat(88) }));
+  }, { wallet: fan.publicKey.toBase58(), alias });
   await page.reload();
   const connect = page.getByRole('button', { name: "Connect wallet to book" });
   await expect(connect).toBeVisible();
   await connect.click();
   await page.getByRole('button', { name: 'Phantom', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Continue / verify booking' })).toBeVisible();
-  await page.getByLabel("Signature to recover a submitted payment (optional)").fill('1'.repeat(88));
+  await expect(page.getByLabel("Signature to recover a submitted payment (optional)")).toHaveCount(0);
   await page.getByRole('button', { name: 'Continue / verify booking' }).click();
   await expect(page.getByRole('status')).toContainText('Booking confirmed');
   expect(confirmations).toBe(1); expect(reservations).toBe(1); expect(checkouts).toBe(1);

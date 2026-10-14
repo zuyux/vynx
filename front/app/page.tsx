@@ -11,7 +11,7 @@ import { jsonLd, siteUrl, SITE_DESCRIPTION, SITE_TITLE } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 const pageMetadata: Metadata = { alternates: { canonical: siteUrl() },
-  openGraph: { type: 'website', siteName: 'VYNX', url: siteUrl(), title: SITE_TITLE, description: SITE_DESCRIPTION, images: [{ url: '/hero-card-asset.png', alt: 'VYNX creator card' }] } };
+  openGraph: { type: 'website', siteName: 'VYNX', url: siteUrl(), title: SITE_TITLE, description: SITE_DESCRIPTION, images: [{ url: '/vynx-home-og.jpg', width: 1200, height: 630, alt: 'VYNX — Your space. Your audience. Your rules.' }] } };
 
 export async function generateMetadata() { return localizeMetadata(pageMetadata, "/"); }
 

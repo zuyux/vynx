@@ -32,8 +32,8 @@ const baseMetadata: Metadata = {
   description: SITE_DESCRIPTION,
   applicationName: 'VYNX',
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 } },
-  openGraph: { type: 'website', siteName: 'VYNX', title: SITE_TITLE, description: SITE_DESCRIPTION, images: [{ url: '/hero-card-asset.png', alt: 'VYNX creator card' }] },
-  twitter: { card: 'summary_large_image', title: SITE_TITLE, description: SITE_DESCRIPTION, images: ['/hero-card-asset.png'] },
+  openGraph: { type: 'website', siteName: 'VYNX', title: SITE_TITLE, description: SITE_DESCRIPTION, images: [{ url: '/vynx-home-og.jpg', width: 1200, height: 630, alt: 'VYNX — Your space. Your audience. Your rules.' }] },
+  twitter: { card: 'summary_large_image', title: SITE_TITLE, description: SITE_DESCRIPTION, images: ['/vynx-home-og.jpg'] },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
     other: process.env.BING_SITE_VERIFICATION ? { 'msvalidate.01': process.env.BING_SITE_VERIFICATION } : undefined,

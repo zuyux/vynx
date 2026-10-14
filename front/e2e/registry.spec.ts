@@ -27,9 +27,9 @@ test('browser registers a one-character alias with sponsorship, publishes and re
   const context = await browser.newContext(); const owner = await installWallet(context); const page = await context.newPage();
   await signIn(page, '/dashboard/card'); await expect(page).toHaveURL(/profile\/buy-alias/);
   await page.getByLabel('Alias', { exact: true }).fill(alias);
-  await expect(page.getByRole('button', { name: 'Claim alias — 0.92 SOL' })).toBeEnabled();
-  await expect(page.getByText(/One alias per wallet/)).toContainText('VYNX pays network fees');
-  await page.getByRole('button', { name: 'Claim alias — 0.92 SOL' }).click();
+  await expect(page.getByRole('button', { name: 'Claim alias for free' })).toBeEnabled();
+  await expect(page.getByText(/One alias per wallet/)).toContainText('No SOL needed');
+  await page.getByRole('button', { name: 'Claim alias for free' }).click();
   await expect(page).toHaveURL(/dashboard\/card/);
   await page.getByLabel("Creator name").fill('Registry creator');
   await page.getByRole('button', { name: "Save and publish", exact: true }).click();
@@ -115,10 +115,10 @@ test('sponsor reservations enforce an atomic global budget and deny anonymous le
   const database = db();
   const { data: rows, error } = await database.from('alias_registration_intents').select('*'); expect(error).toBeNull(); expect(rows?.length).toBeGreaterThan(0);
   const sample = rows![0];
-  const spent = rows!.reduce((sum, row) => sum + Number(row.reserved_fee), 0);
+  const spent = rows!.reduce((sum, row) => sum + Number(row.reserved_fee) + Number(row.price_lamports), 0);
   const candidates = [0,1].map(() => ({ ...sample, id: randomUUID(), wallet: Keypair.generate().publicKey.toBase58(), alias: 'budget_registry', signature: bs58.encode(randomBytes(64)) }));
   try {
-    const results = await Promise.all(candidates.map(candidate => database.rpc('reserve_alias_registration', { candidate, daily_budget: spent + Number(sample.reserved_fee) })));
+    const results = await Promise.all(candidates.map(candidate => database.rpc('reserve_alias_registration', { candidate, daily_budget: spent + Number(sample.reserved_fee) + Number(sample.price_lamports) })));
     expect(results.every(result => !result.error)).toBe(true);
     expect(results.filter(result => result.data.accepted)).toHaveLength(1); expect(results.filter(result => result.data.limited)).toHaveLength(1);
     const anonymous = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);

@@ -61,3 +61,7 @@ test('RPC response body stalls are aborted and reported as timeouts', async () =
     await assert.rejects(claimRpcFetch('https://rpc.test'), error => error.code === 'RPC_TIMEOUT' && error.status === 503);
   } finally { clearInterval(keepAlive); globalThis.fetch = original; }
 });
+
+test("fully sponsored claims never ask the creator to fund their wallet", () => {
+  assert.equal(claimErrorMessage({ code: "INSUFFICIENT_FUNDS" }, "send", false, "0.92", true, true), "Registration is temporarily unavailable. Please try again shortly.");
+});

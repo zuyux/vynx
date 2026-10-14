@@ -72,7 +72,7 @@ function BuyAliasContent() {
     if (claimed.alias && !claimed.error) router.replace(`/${encodeURIComponent(claimed.alias)}`);
   }, [claimed.alias, claimed.error, router]);
   const [alias, setAlias] = useState(params.get('alias') ?? '');
-  const [quote, setQuote] = useState<{ alias: string; priceSol: string; priceLamports: string; priceVersion: string; sponsored: boolean } | null>(null);
+  const [quote, setQuote] = useState<{ alias: string; priceSol: string; priceLamports: string; priceVersion: string; sponsored: boolean; fullySponsored?: boolean } | null>(null);
   const [quoteAttempt, setQuoteAttempt] = useState(0);
   const [quoteError, setQuoteError] = useState('');
   useEffect(() => {
@@ -138,11 +138,11 @@ function BuyAliasContent() {
       if (!reference) {
         stage = 'prepare';
         const name = normalizeAlias(alias);
-        setNotice(t('Preparing your devnet alias payment…'));
+        setNotice(t('Preparing your alias claim…'));
         if (!currentQuote) throw new UserFacingError(t('Wait for the on-chain quote before claiming.'));
         const payment = await post(`/api/actions/claim-alias?alias=${name}`, { account: session.connectedWallet, priceLamports: currentQuote.priceLamports, priceVersion: currentQuote.priceVersion });
         stage = 'send';
-        setNotice(t('Approve the alias payment in your wallet…'));
+        setNotice(t('Sign the alias claim in your wallet…'));
         const tx = Transaction.from(Uint8Array.from(atob(payment.transaction), character => character.charCodeAt(0)));
         // The sponsor is the fee payer, so its signature is known before wallet
         // approval. Preserve it to recover an ambiguous send response.
@@ -155,7 +155,7 @@ function BuyAliasContent() {
         setPending(reference);
         try { localStorage.setItem(key, JSON.stringify(reference)); } catch { /* The signature remains visible for recovery. */ }
       }
-      setNotice(t('Payment sent. Verifying your alias…'));
+      setNotice(t('Claim sent. Verifying your alias…'));
       stage = 'verify';
       const receipt = reference;
       await confirmPayment(() => post(`/api/actions/claim-alias/confirm?alias=${receipt.alias}`, { account: session.connectedWallet, signature: receipt.signature }));
@@ -172,12 +172,12 @@ function BuyAliasContent() {
         try { localStorage.removeItem(`vynx:claim:${session.connectedWallet}`); } catch { /* A failed transaction transferred no funds. */ }
       }
       if (reference) setPending(reference);
-      setFailed(true); setNotice(claimErrorMessage(reason, stage, !!reference, currentQuote?.priceSol, currentQuote?.sponsored)); }
+      setFailed(true); setNotice(claimErrorMessage(reason, stage, !!reference, currentQuote?.priceSol, currentQuote?.sponsored, currentQuote?.fullySponsored)); }
     finally { setBusy(false); }
   }
-  return <main id="main-content" tabIndex={-1} className="relative flex min-h-screen items-center justify-center bg-[#07070a] p-6 pt-20 text-white">{session.wallet && <div className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-20"><SponsorshipWalletControl iconOnly /></div>}<section className="w-full max-w-md rounded-3xl border border-white/10 bg-[#101015] p-8"><BrandLogo /><h1 className="mt-6 text-3xl font-semibold">{t("Claim your alias")}</h1>{params.get('welcome') === '1' && <p className="mt-3 text-sm leading-6 text-zinc-300">{t("Welcome to Vynx. Claim your unique @alias to create your creator card and give your audience a place to find you.")}</p>}<PaymentDisclosure /><p className="mt-3 text-sm leading-6 text-zinc-400">{t("One alias per wallet. ")}{currentQuote ? t("Registration costs {v0} SOL on Solana devnet, including account rent. {v1}", {v0: currentQuote.priceSol, v1: currentQuote.sponsored ? 'VYNX pays network fees.' : 'Network fees are extra.'}) : t('Enter a 1–30 character alias to read its on-chain price.')}</p>
-    {claimed.alias ? <div className="mt-6"><p>{t("Your wallet already owns @")}{claimed.alias}.</p><Link href="/dashboard/card" className="mt-5 inline-block rounded-xl bg-[#00F5A0] px-5 py-3 font-semibold text-black">{t("Edit my creator card")}</Link></div> : <form onSubmit={event => void claim(event)} className="mt-6 space-y-4"><label className="block text-sm">{t("Alias")}<input name="alias" required minLength={1} maxLength={30} disabled={busy || !!pending} value={alias} onChange={event => setAlias(event.target.value.toLowerCase())} placeholder="your_alias" className="mt-2 w-full rounded-xl border border-white/15 bg-black/20 px-4 py-3 outline-none focus:border-[#00F5A0]" /></label><button type={session.connectedWallet ? 'submit' : 'button'} onClick={session.connectedWallet ? undefined : event => void claim(event)} disabled={busy || claimed.loading || !!claimed.error || (!!session.connectedWallet && !pending && !currentQuote)} className="w-full rounded-xl bg-[#00F5A0] px-5 py-3 font-semibold text-black disabled:opacity-40">{busy ? t('Processing…') : pending ? t('Verify alias payment') : session.connectedWallet ? t("Claim alias — {v0} SOL", {v0: currentQuote?.priceSol ?? '…'}) : t('Connect wallet')}</button></form>}
-    <section aria-labelledby="wallet-funding-heading" className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-4">
+  return <main id="main-content" tabIndex={-1} className="relative flex min-h-screen items-center justify-center bg-[#07070a] p-6 pt-20 text-white">{session.wallet && <div className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-20"><SponsorshipWalletControl iconOnly /></div>}<section className="w-full max-w-md rounded-3xl border border-white/10 bg-[#101015] p-8"><BrandLogo /><h1 className="mt-6 text-3xl font-semibold">{t("Claim your alias")}</h1>{params.get('welcome') === '1' && <p className="mt-3 text-sm leading-6 text-zinc-300">{t("Welcome to Vynx. Claim your unique @alias to create your creator card and give your audience a place to find you.")}</p>}<PaymentDisclosure /><p className="mt-3 text-sm leading-6 text-zinc-400">{t("One alias per wallet. ")}{currentQuote?.fullySponsored ? t("VYNX currently pays registration, account rent and network fees. Sign with your wallet or Privy to claim. No SOL needed.") : currentQuote ? t("Registration costs {v0} SOL on Solana devnet, including account rent. {v1}", {v0: currentQuote.priceSol, v1: currentQuote.sponsored ? 'VYNX pays network fees.' : 'Network fees are extra.'}) : t('Enter a 1–30 character alias to read its on-chain price.')}</p>
+    {claimed.alias ? <div className="mt-6"><p>{t("Your wallet already owns @")}{claimed.alias}.</p><Link href="/dashboard/card" className="mt-5 inline-block rounded-xl bg-[#00F5A0] px-5 py-3 font-semibold text-black">{t("Edit my creator card")}</Link></div> : <form onSubmit={event => void claim(event)} className="mt-6 space-y-4"><label className="block text-sm">{t("Alias")}<input name="alias" required minLength={1} maxLength={30} disabled={busy || !!pending} value={alias} onChange={event => setAlias(event.target.value.toLowerCase())} placeholder="your_alias" className="mt-2 w-full rounded-xl border border-white/15 bg-black/20 px-4 py-3 outline-none focus:border-[#00F5A0]" /></label><button type={session.connectedWallet ? 'submit' : 'button'} onClick={session.connectedWallet ? undefined : event => void claim(event)} disabled={busy || claimed.loading || !!claimed.error || (!!session.connectedWallet && !pending && !currentQuote)} className="w-full rounded-xl bg-[#00F5A0] px-5 py-3 font-semibold text-black disabled:opacity-40">{busy ? t('Processing…') : pending ? t('Verify alias payment') : session.connectedWallet ? currentQuote?.fullySponsored ? t("Claim alias for free") : t("Claim alias — {v0} SOL", {v0: currentQuote?.priceSol ?? '…'}) : t('Connect wallet')}</button></form>}
+    {!currentQuote?.fullySponsored && <section aria-labelledby="wallet-funding-heading" className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-4">
       <h2 id="wallet-funding-heading" className="text-sm font-semibold">{t("Your wallet · Solana devnet")}</h2>
       {session.connectedWallet ? <>
         <p className="mt-3 text-xs text-zinc-400">{t("Connected wallet address")}</p>
@@ -194,7 +194,7 @@ function BuyAliasContent() {
         <li>{t("Wait for the SOL to arrive, then return here to claim your alias.")}{currentQuote ? t(" You need {v0} SOL{v1}", {v0: currentQuote.priceSol, v1: currentQuote.sponsored ? '; VYNX pays network fees.' : ' plus network fees.'}) : ''}</li>
       </ol>
       <p className="mt-3 text-xs leading-5 text-zinc-400">{t("Devnet SOL has no monetary value. Use devnet in your wallet when available. Do not send real SOL from an exchange or mainnet to fund this purchase.")}</p>
-    </section>
+    </section>}
     {quoteError && <p role="alert" className="mt-4 text-sm text-red-200">{t(quoteError)} <button type="button" onClick={() => setQuoteAttempt(previous => previous + 1)} className="underline">{t("Retry pricing")}</button></p>}
     {notice && <p role={failed ? 'alert' : 'status'} className={`mt-4 text-sm ${failed ? 'text-red-200' : 'text-emerald-200'}`}>{t(notice)}</p>}
     {claimed.error && <p role="alert" className="mt-4 text-sm text-red-200">{t(claimed.error)} <button onClick={claimed.retry} className="underline">{t("Retry")}</button></p>}

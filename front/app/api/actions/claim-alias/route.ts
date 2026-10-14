@@ -23,9 +23,9 @@ export async function GET(request: NextRequest) {
         if (!data.allowed) return NextResponse.json({ error: 'Too many pricing requests. Please try again shortly.' }, { status: 429, headers: { ...CORS, 'Retry-After': String(data.retry_after) } });
       }
       const alias = normalizeAlias(request.nextUrl.searchParams.get('alias'));
-      const quote = registryEnabled() ? await registrationQuote(alias) : { priceSol: CLAIM_PRICE_SOL, priceLamports: '10000', priceVersion: '0', sponsored: false };
+      const quote = registryEnabled() ? await registrationQuote(alias) : { priceSol: CLAIM_PRICE_SOL, priceLamports: '10000', priceVersion: '0', sponsored: false, fullySponsored: false };
       const origin = process.env.NEXT_PUBLIC_APP_URL ?? request.nextUrl.origin;
-      return NextResponse.json({ priceSol: quote.priceSol, priceLamports: quote.priceLamports, priceVersion: quote.priceVersion, sponsored: quote.sponsored, title: `Claim @${alias} on VYNX`, icon: `${origin}/logo.png`, description: `Pay ${quote.priceSol} devnet SOL to register your alias.`, label: `Claim @${alias}`, links: { actions: [{ label: `Claim for ${quote.priceSol} SOL`, href: `/api/actions/claim-alias?alias=${alias}` }] } }, { headers: CORS });
+      return NextResponse.json({ priceSol: quote.priceSol, priceLamports: quote.priceLamports, priceVersion: quote.priceVersion, sponsored: quote.sponsored, fullySponsored: quote.fullySponsored, title: `Claim @${alias} on VYNX`, icon: `${origin}/logo.png`, description: quote.fullySponsored ? 'VYNX pays registration, account rent and network fees. Sign with your wallet to claim.' : `Pay ${quote.priceSol} devnet SOL to register your alias.`, label: `Claim @${alias}`, links: { actions: [{ label: quote.fullySponsored ? 'Claim for free' : `Claim for ${quote.priceSol} SOL`, href: `/api/actions/claim-alias?alias=${alias}` }] } }, { headers: CORS });
     } catch (reason) { return apiFailure(reason, CORS); }
   }, CORS);
 }
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       }
       const result = await buildClaim(request.nextUrl.searchParams.get('alias'), body.account, body);
       const priceSol = 'priceSol' in result ? result.priceSol : CLAIM_PRICE_SOL;
-      return NextResponse.json({ ...result, message: `Claim @${result.alias} for ${priceSol} devnet SOL`, links: { next: { type: 'post', href: `/api/actions/claim-alias/confirm?alias=${result.alias}` } } }, { headers: CORS });
+      return NextResponse.json({ ...result, message: 'fullySponsored' in result && result.fullySponsored ? `Claim @${result.alias} — VYNX pays all costs` : `Claim @${result.alias} for ${priceSol} devnet SOL`, links: { next: { type: 'post', href: `/api/actions/claim-alias/confirm?alias=${result.alias}` } } }, { headers: CORS });
     } catch (reason) { return apiFailure(reason, CORS); }
   }, CORS);
 }

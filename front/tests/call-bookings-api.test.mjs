@@ -23,6 +23,9 @@ test('booking API binds session, reuses checkout and verifies finalized transact
   let raw='';for await(const chunk of req)raw+=chunk;const rpc=JSON.parse(raw);let result;
   if(rpc.method==='getGenesisHash')result=DEVNET_GENESIS_HASH;
   else if(rpc.method==='getLatestBlockhash')result={context:{slot:10},value:{blockhash:payer.publicKey.toBase58(),lastValidBlockHeight:150}};
+  else if(rpc.method==='getMinimumBalanceForRentExemption')result=rpc.params[0]===226?2463840:2039280;
+  else if(rpc.method==='getFeeForMessage')result={context:{slot:10},value:10000};
+  else if(rpc.method==='getBalance')result={context:{slot:10},value:1000000000};
   else if(rpc.method==='getAccountInfo')result={context:{slot:10},value:rpc.params[0]===addresses.config.toBase58()?account(config):rpc.params[0]===program.toBase58()?account(Buffer.alloc(0),true):receipt?account(receipt):null};
   else if(rpc.method==='getTransaction')result=chainTx;
   else throw Error(`Unexpected RPC ${rpc.method}`);
@@ -58,7 +61,7 @@ test('booking API binds session, reuses checkout and verifies finalized transact
   assert.equal((await POST(request({action:'reserve',alias:'alice',slot:starts,accepted_policy:'vynx-escrow-devnet-v1'}))).status,200);
   const first=await(await POST(request({action:'checkout',id}))).json(),second=await(await POST(request({action:'checkout',id}))).json();
   assert.equal(first.transaction,second.transaction);assert.equal(first.booking.payer_wallet,undefined);
-  const tx=Transaction.from(Buffer.from(first.transaction,'base64'));assert(tx.signatures.some(s=>s.publicKey.equals(quote.publicKey)&&s.signature));tx.partialSign(payer);
+  const tx=Transaction.from(Buffer.from(first.transaction,'base64'));assert(tx.feePayer.equals(quote.publicKey));assert.equal(tx.instructions.length,2);assert(tx.signatures.some(s=>s.publicKey.equals(quote.publicKey)&&s.signature));tx.partialSign(payer);
   const signature=bs58.encode(tx.signature),message=tx.compileMessage();
   const pending=await POST(request({action:'confirm',id,signature}));assert.equal(pending.status,409);assert.equal((await pending.json()).code,'PAYMENT_PENDING');assert.equal(confirmations,0);
   chainTx={slot:10,blockTime:Math.floor(Date.now()/1000),version:'legacy',meta:{err:null,fee:5000,preBalances:message.accountKeys.map(()=>10000000),postBalances:message.accountKeys.map(()=>10000000),innerInstructions:[],logMessages:[],preTokenBalances:[],postTokenBalances:[]},transaction:{signatures:tx.signatures.map(s=>bs58.encode(s.signature)),message:{header:message.header,accountKeys:message.accountKeys.map(k=>k.toBase58()),recentBlockhash:message.recentBlockhash,instructions:message.instructions}}};

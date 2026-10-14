@@ -77,3 +77,9 @@ migration to disposable Postgres, uses the real compiled program in LiteSVM with
 real wallet signatures, and exercises browser, API, database and program
 boundaries. `test:e2e` separately keeps the previous compatibility suite.
 Frontend CI runs both suites. Neither browser suite broadcasts to live devnet.
+
+## Temporary full sponsorship
+
+New registry claims are currently free to the user. The server signs with its configured local sponsor key and atomically funds the owner for the quoted registration price before registering; the owner still signs the exact transaction with their wallet or Privy. Failure rolls back the funding. No program upgrade is needed. Confirmation checks a zero net owner debit and preserves verification of older paid intents.
+
+Apply migration `023_alias_claim_sponsorship.sql` to reserve registration prices plus network fees under the rolling 24-hour budget. `VYNX_ALIAS_SPONSOR_DAILY_BUDGET_LAMPORTS` defaults to 1,000,000,000 lamports (1 devnet SOL). Reservations remain counted after failure/expiry. Keep the sponsor funded for the quoted tier plus fees; insufficient sponsor balance rejects preparation before wallet approval.

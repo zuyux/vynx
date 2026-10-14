@@ -5,7 +5,7 @@ const path=require('node:path');
 const {randomBytes}=require('node:crypto');
 const {LiteSVM,FailedTransactionMetadata}=require('litesvm');
 const {getTransactionDecoder}=require('@solana/kit');
-const {Keypair,PublicKey,Transaction,ComputeBudgetProgram}=require('@solana/web3.js');
+const {Keypair,PublicKey,Transaction,SystemProgram,ComputeBudgetProgram}=require('@solana/web3.js');
 const {MintLayout,AccountLayout}=require('@solana/spl-token');
 const c=require('../scripts/booking-client.cjs');
 function fixture() {
@@ -92,4 +92,33 @@ test('disputed recovery becomes refundable exactly at its deadline',()=>{
  f.time(101800+30*86400);f.fail(f.settle('refund',f.stranger));f.ok(f.settle('refund',f.payer));
  assert.equal(f.balance(f.source),100000000n);assert.equal(f.balance(c.vault(f.id)),0n);
  f.fail(f.settle('resolve',f.resolver,1000000n));assert.equal(f.balance(f.destination),0n);
+});
+
+test('sponsored booking works with zero SOL and rolls rent funding back on rejection',()=>{
+ const f=fixture();
+ const address=f.payer.publicKey.toBase58();
+ const account=f.svm.getAccount(address);
+ f.svm.setAccount({...account,lamports:0n});
+ const rent=f.svm.minimumBalanceForRentExemption(226n)+f.svm.minimumBalanceForRentExemption(165n);
+ function sponsored(overrides={},includePayer=true){
+  const tx=new Transaction({feePayer:f.quote.publicKey,recentBlockhash:f.svm.latestBlockhash()}).add(
+   ComputeBudgetProgram.setComputeUnitLimit({units:300000}),
+   SystemProgram.transfer({fromPubkey:f.quote.publicKey,toPubkey:f.payer.publicKey,lamports:Number(rent)}),
+   f.fund(overrides));
+  tx.sign(...(includePayer?[f.quote,f.payer]:[f.quote]));
+  return f.svm.sendTransaction(getTransactionDecoder().decode(tx.serialize()));
+ }
+ assert.throws(()=>sponsored({},false),/signature/i);
+ f.fail(sponsored({expires:999}));
+ assert.equal(f.svm.getBalance(address)??0n,0n);
+ assert.equal(f.balance(f.source),100000000n);
+ const before=f.svm.getBalance(f.quote.publicKey.toBase58());
+ f.ok(sponsored());
+ assert.equal(f.svm.getBalance(address)??0n,0n);
+ assert.equal(f.balance(f.source),99000000n);
+ assert.equal(f.balance(c.vault(f.id)),1000000n);
+ assert(f.svm.getBalance(f.quote.publicKey.toBase58())<before-rent);
+ f.fail(sponsored());
+ assert.equal(f.svm.getBalance(address)??0n,0n);
+ assert.equal(f.balance(f.source),99000000n);
 });

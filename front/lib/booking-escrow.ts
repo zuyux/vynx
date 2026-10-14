@@ -57,13 +57,28 @@ export async function buildBookingPayment(b: CallBooking) {
   data.writeBigUInt64LE(BigInt(b.price_units), 56); data.writeBigInt64LE(BigInt(Date.parse(b.starts_at) / 1000), 64);
   data.writeBigInt64LE(BigInt(Date.parse(b.ends_at) / 1000), 72); data.writeBigInt64LE(BigInt(Date.parse(b.expires_at) / 1000), 80);
   const latest = await connection.getLatestBlockhash('finalized');
-  const tx = new Transaction({ feePayer: payer, ...latest }).add(new TransactionInstruction({ programId: program, data, keys: [
+  // Fund only the exact rent consumed by the program's two init accounts.
+  // The transfer and escrow funding are atomic, so a rejected booking cannot
+  // leave sponsored SOL in the customer's wallet. The quote authority already
+  // co-signs every booking and now also pays the network fee.
+  const rents = await Promise.all([connection.getMinimumBalanceForRentExemption(226), connection.getMinimumBalanceForRentExemption(165)]);
+  const rent = rents[0] + rents[1];
+  if (!Number.isSafeInteger(rent) || rent <= 0 || rent > 10_000_000 || payer.equals(signer.publicKey)) {
+    throw new ApiError('Booking sponsorship is unavailable.', 503, 'SPONSOR_UNAVAILABLE');
+  }
+  const tx = new Transaction({ feePayer: signer.publicKey, ...latest })
+    .add(SystemProgram.transfer({ fromPubkey: signer.publicKey, toPubkey: payer, lamports: rent }))
+    .add(new TransactionInstruction({ programId: program, data, keys: [
     { pubkey: payer, isSigner: true, isWritable: true }, { pubkey: signer.publicKey, isSigner: true, isWritable: false },
     { pubkey: config, isSigner: false, isWritable: false }, { pubkey: new PublicKey(b.creator_wallet), isSigner: false, isWritable: false },
     { pubkey: booking, isSigner: false, isWritable: true }, { pubkey: mint, isSigner: false, isWritable: false },
     { pubkey: getAssociatedTokenAddressSync(mint, payer), isSigner: false, isWritable: true }, { pubkey: vault, isSigner: false, isWritable: true },
     { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false }, { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
   ] }));
+  const fee = (await connection.getFeeForMessage(tx.compileMessage(), 'finalized')).value;
+  if (!fee || fee > 50_000 || await connection.getBalance(signer.publicKey, 'finalized') < rent + fee) {
+    throw new ApiError('Booking sponsorship is temporarily unavailable. Please try again later.', 503, 'SPONSOR_UNAVAILABLE');
+  }
   tx.partialSign(signer);
   return { transaction: tx.serialize({ requireAllSignatures: false }).toString('base64'), height: latest.lastValidBlockHeight };
 }
